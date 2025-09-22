@@ -1,0 +1,133 @@
+% Zack's notes:
+% Should I add more (page-specific) citations to the USB implementation section?
+% We should probably switch to using individual .bib files
+% Maybe use bolding on itemize lists
+
+\documentclass[11pt]{article}
+\usepackage[letterpaper, margin=1in]{geometry}
+
+% Used to place appendix in the toc with proper titles
+\usepackage[toc,page,title]{appendix}
+\renewcommand{\appendixname}{Appendix} % Used to rename from "Appendices" to "Appendix"
+\renewcommand{\appendixpagename}{Appendix} % Used to rename from "Appendices" to "Appendix"
+\renewcommand{\appendixtocname}{Appendix} % Used to rename from "Appendices" to "Appendix"
+
+% Used to make citations/bibliography
+% Usage:
+% \bibliography{./bibliography/fullbib.bib}
+% \bibliographystyle{plain}
+\usepackage{cite}
+
+% To enable forcing figure placement
+\usepackage{float}
+
+% Used to skip to next paragraph when a blank line is used between sentences
+\usepackage{parskip}
+
+% Used to change line spacing (double spaced, 1.5, etc.)
+% Usage: 
+% \begin{spacing}{1.5}
+% \end{spacing}
+\usepackage{setspace}
+
+% Used for inserting images.
+% Usage: 
+% \begin{figure}[hpt]
+%     \centering
+%     \caption{Caption}
+%     \includegraphics[width=0.6\textwidth]{images/<IMG.NAME>}
+%     \label{fig:<LABEL>}
+% \end{figure}
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+% Subplots
+\usepackage{subcaption}
+
+% Used for in text code with formatting and language highlighting
+\usepackage{listings}
+\usepackage{xcolor}
+
+\usepackage[breaklinks]{hyperref}
+\usepackage{url}
+
+% Define custom style
+\lstdefinestyle{mystyle}{
+    basicstyle=\ttfamily\footnotesize, % Use a monospaced font with strict sizing
+    numbers=left, % Show line numbers
+    numbersep=5pt,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1, % Ensures every line gets numbered
+    tabsize=4, % Set tab width
+    keepspaces=true, % Preserve spaces
+    showspaces=false,
+    showstringspaces=false,
+    breaklines=true,
+    breakatwhitespace=false,
+    columns=fixed, % Maintain strict spacing
+    lineskip=-1pt, % Prevent additional spacing between lines
+    frame=single, % Optional: adds a border around the code
+    rulecolor=\color{black},
+    backgroundcolor=\color{white},
+    keywordstyle=\color{blue}\bfseries, % Style for keywords
+    stringstyle=\color{red}, % Style for strings
+    commentstyle=\color{gray}, % Style for comments
+    xleftmargin=5pt, % Adjusts left margin outside the frame
+    xrightmargin=5pt % Adjusts right margin outside the frame
+}
+\renewcommand{\lstlistingname}{Code Block}
+
+
+\lstset{style=mystyle}
+
+% Used to create hyperlink references that can be clicked within the PDF
+% Usage: \ref{<SECTIONLABEL>}
+\usepackage{hyperref}
+
+% Used for certain math symbols
+\usepackage{amssymb}
+
+\usepackage{array}
+\usepackage{ragged2e}
+
+\usepackage{titlesec}
+\usepackage{bookmark}
+
+\setlength\parindent{0pt}
+
+\title{%
+  ELEC 873 \\
+Assignment 1}
+
+\author{Anthony Sicoie (20214793)}
+
+\begin{document}
+
+\maketitle
+
+
+\section*{Q1:}
+
+\section*{Q2:}
+
+\section*{Q3:}
+
+\section*{Q4:}
+
+\section*{Q5:}
+
+\section*{Q6:}
+
+\section*{Q7:}
+
+\section*{Q8:}
+
+\section*{Q9:}
+
+
+\newpage
+
+% \bibliography{./bibliography/master.bib}
+% \bibliographystyle{IEEEtran}
+
+\end{document}
