@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < size; i++)
       data[i] = (char)i;
 
-    MPI_Pack(&data, size, MPI_CHAR, &sendBuf, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(data, size, MPI_CHAR, &sendBuf, size, &position, MPI_COMM_WORLD);
     MPI_Send(&sendBuf, position, MPI_PACKED, (rank + 1) % size, 0,
              MPI_COMM_WORLD);
     printf("Process %d kept %d and sent the rest to %d\n", rank, data[0],
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
   } else {
     if (MPI_Recv(&data, size - rank, MPI_CHAR, (rank - 1 + size) % size, 0,
                  MPI_COMM_WORLD, &status) == MPI_SUCCESS) {
-      MPI_Unpack(&data, int insize, int *position, void *outbuf, int outcount,
+      MPI_Unpack(&data, size - rank, &position, void *outbuf, int outcount,
                  MPI_Datatype datatype, MPI_Comm comm)
 
           int recData = data[0];
