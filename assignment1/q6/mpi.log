@@ -1,7 +1,8 @@
-Rank 1 is expecting to recieve 2 data
-dataBuff: 1, 2, 3, 
-Process 0 recieved 3 items, kept 1 (data = 1), and sent the remaining 2 items to 1
-Rank 2 is expecting to recieve 1 data
-Rank 1 is sending 2 data
-Process 1 recieved 2 items from process 0, kept 1 (data = 1), and sent the remaining 0 items to 2
-Process 2 recieved 1 items from process 1, kept 1 (data = 112), and is the last process to recieve data
+Process 0 recieved 8 items, kept 1 (data = 1), and sent the remaining 7 items to 1
+Process 1 recieved 7 items from process 0, kept 1 (data = 2), and sent the remaining 6 items to process 2
+Process 2 recieved 6 items from process 1, kept 1 (data = 3), and sent the remaining 5 items to process 3
+Process 3 recieved 5 items from process 2, kept 1 (data = 4), and sent the remaining 4 items to process 4
+Process 4 recieved 4 items from process 3, kept 1 (data = 5), and sent the remaining 3 items to process 5
+Process 5 recieved 3 items from process 4, kept 1 (data = 6), and sent the remaining 2 items to process 6
+Process 6 recieved 2 items from process 5, kept 1 (data = 7), and sent the remaining 1 items to process 7
+Process 7 recieved 1 items from process 6, kept 1 (data = 8), and is the last process to recieve data

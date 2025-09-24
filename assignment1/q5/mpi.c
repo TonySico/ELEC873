@@ -25,13 +25,13 @@ int main(int argc, char *argv[]) {
   MPI_Cart_rank(grid_comm, coordinates, &grid_rank);
 
   printf(
-      "Process %d my_grid_rank = %d, coords  = (%d, %d, %d), grid_rank = % d\n",
+      "Process %d my_grid_rank = %d, coords = (%d, %d, %d), grid_rank = % d\n",
       rank, my_grid_rank, coordinates[0], coordinates[1], coordinates[2],
       grid_rank);
 
   free_coords[0] = 0;
   free_coords[1] = 1;
-  free_coords[2] = 0;
+  free_coords[2] = 1;
 
   MPI_Cart_sub(grid_comm, free_coords, &row_comm);
   if (coordinates[1] == 0)
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     row_test = -1;
 
   MPI_Bcast(&row_test, 1, MPI_INT, 0, row_comm);
-  printf("Process %d coords = (%d, %d, %d), row_test = %d\n", rank,
+  printf("Process %d coords = (%d, %d, %d), plane_test = %d\n", rank,
          coordinates[0], coordinates[1], coordinates[2], row_test);
 
   MPI_Finalize();

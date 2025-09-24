@@ -1,16 +1,50 @@
 #include <mpi.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define ARRAY_SIZE 256
 
 int main(int argc, char *argv[]) {
-  int ierror, rank, size;
+  int rank, size;
+
+  srand(time(NULL));
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  ierror = MPI_Comm_size(MPI_COMM_WORLD, &size);
-  if (ierror != MPI_SUCCESS)
-    MPI_Abort(MPI_COMM_WORLD, ierror);
-  printf("Hello World, I am process %d out of %d processes.\n", rank, size);
+  int *data;
+  int split = ARRAY_SIZE / size;
+  int global_min;
+
+  if (rank == 0) {
+    data = malloc(ARRAY_SIZE * sizeof(int));
+    for (int i = 0; i < ARRAY_SIZE; i++)
+      data[i] = rand() % 1000;
+  } else {
+    data = malloc(split * sizeof(int));
+  }
+
+  MPI_Scatter(data, split, MPI_INT, data, split, MPI_INT, 0, MPI_COMM_WORLD);
+
+  int local_min = data[0];
+
+  for (int i = 0; i < split; i++) {
+    if (data[i] < local_min)
+      local_min = data[i];
+  }
+
+  MPI_Reduce(&local_min, &global_min, 1, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
+
+  if (rank == 0) {
+    // For verification
+    // for (int i = 0; i < ARRAY_SIZE; i++) {
+    //   printf("%d,", data[i]);
+    // }
+    // printf("\n");
+    printf("Global min = %d", global_min);
+  }
 
   MPI_Finalize();
   return 0;

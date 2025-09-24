@@ -1,15 +1,31 @@
 #include <omp.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define ARRAY_SIZE 256
 
 int main(int argc, char *argv[]) {
-  int nthreads, myid;
+  srand(time(NULL));
+  int *data;
+  int global_min;
 
-#pragma omp parallel private(nthreads, myid)
-  {
-    nthreads = omp_get_num_threads();
-    myid = omp_get_thread_num();
-    printf("Hello World, I am thread %d out of %d threads.\n", myid, nthreads);
+  data = malloc(ARRAY_SIZE * sizeof(int));
+  for (int i = 0; i < ARRAY_SIZE; i++)
+    data[i] = rand() % 1000;
+
+#pragma omp parallel for reduction(min : global_min)
+  for (int i = 0; i < ARRAY_SIZE; i++) {
+    if (data[i] < global_min)
+      global_min = data[i];
   }
+
+  // For verification
+  // for (int i = 0; i < ARRAY_SIZE; i++) {
+  //   printf("%d,", data[i]);
+  // }
+  // printf("\n");
+  printf("Global min = %d", global_min);
 
   return 0;
 }

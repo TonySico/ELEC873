@@ -7,14 +7,16 @@ PTHCC   = gcc -pthread
 MPI_EXE     = mpi
 OPENMP_EXE  = openmp
 PTHREAD_EXE = pthread
+HYBRID_EXE  = hybrid
 
 # Sources
 MPI_SRC     = mpi.c
 OPENMP_SRC  = openmp.c
 PTHREAD_SRC = pthread.c
+HYBRID_SRC  = hybrid.c
 
 # Default build rule
-build: $(MPI_EXE) $(OPENMP_EXE) $(PTHREAD_EXE)
+build: $(MPI_EXE) $(OPENMP_EXE) $(PTHREAD_EXE) $(HYBRID_EXE)
 
 $(MPI_EXE): $(MPI_SRC)
 	$(MPICC) -o $@ $<
@@ -25,9 +27,12 @@ $(OPENMP_EXE): $(OPENMP_SRC)
 $(PTHREAD_EXE): $(PTHREAD_SRC)
 	$(PTHCC) -o $@ $<
 
+$(HYBRID_EXE): $(HYBRID_SRC)
+	$(MPICC) -fopenmp -o $@ $<
+
 # Run all programs with a user-specified number of processes/threads
-# Usage: make runall N=4
-runall: runm runo runp
+# Usage: make runall n=4
+runall: runm runo runp runh
 
 runm:
 ifndef n
@@ -47,7 +52,16 @@ ifndef n
 endif
 	./$(PTHREAD_EXE) $(n) 2>&1 | tee pthread.log
 
+runh:
+ifndef np
+	$(error Please provide np, e.g. make runh np=2 nt=4)
+endif
+ifndef nt
+	$(error Please provide nt, e.g. make runh np=2 nt=4)
+endif
+	OMP_NUM_THREADS=$(nt) mpirun --oversubscribe -np $(np) ./$(HYBRID_EXE) 2>&1 | tee hybrid.log
+
 # Clean up binaries and logs
 clean:
-	rm -f $(MPI_EXE) $(OPENMP_EXE) $(PTHREAD_EXE) *.log
+	rm -f $(MPI_EXE) $(OPENMP_EXE) $(PTHREAD_EXE) $(HYBRID_EXE) *.log
 
