@@ -1,0 +1,16 @@
+Process 5 my_grid_rank = 5, coords  = (1, 0, 1), grid_rank =  5
+Process 3 my_grid_rank = 3, coords  = (0, 1, 1), grid_rank =  3
+Process 0 my_grid_rank = 0, coords  = (0, 0, 0), grid_rank =  0
+Process 0 coords = (0, 0, 0), row_test = 0
+Process 6 my_grid_rank = 6, coords  = (1, 1, 0), grid_rank =  6
+Process 6 coords = (1, 1, 0), row_test = 1
+Process 7 my_grid_rank = 7, coords  = (1, 1, 1), grid_rank =  7
+Process 7 coords = (1, 1, 1), row_test = 1
+Process 1 my_grid_rank = 1, coords  = (0, 0, 1), grid_rank =  1
+Process 1 coords = (0, 0, 1), row_test = 0
+Process 4 my_grid_rank = 4, coords  = (1, 0, 0), grid_rank =  4
+Process 4 coords = (1, 0, 0), row_test = 1
+Process 2 my_grid_rank = 2, coords  = (0, 1, 0), grid_rank =  2
+Process 2 coords = (0, 1, 0), row_test = 0
+Process 3 coords = (0, 1, 1), row_test = 0
+Process 5 coords = (1, 0, 1), row_test = 1

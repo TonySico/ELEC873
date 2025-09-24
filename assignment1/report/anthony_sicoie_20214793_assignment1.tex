@@ -1,8 +1,3 @@
-% Zack's notes:
-% Should I add more (page-specific) citations to the USB implementation section?
-% We should probably switch to using individual .bib files
-% Maybe use bolding on itemize lists
-
 \documentclass[11pt]{article}
 \usepackage[letterpaper, margin=1in]{geometry}
 
@@ -108,13 +103,55 @@ Assignment 1}
 
 \section*{Q1:}
 
+\subsection*{Code:}
+\lstinputlisting[language=C, caption=\centering{MPI code for question 1}, label={q1:mpi}]{../q1/mpi.c}
+\lstinputlisting[language=C, caption=\centering{OpenMP code for question 1}, label={q1:openmp}]{../q1/openmp.c}
+\lstinputlisting[language=C, caption=\centering{Pthread code for question 1}, label={q1:pthread}]{../q1/pthread.c}
+
+\subsection*{Logs:}
+All code was run with 5 processes/threads, though any number can be set via the Makefile \texttt{make runall n=<number\_of\_threads/processes>} directive. 
+This can be seen in the Code Block \ref{a:make} of the appendix where the makefile code is provided
+\lstinputlisting[language=sh, caption=\centering{MPI output for question 1}, label={q1:mpilog}]{../q1/mpi.log}
+\lstinputlisting[language=sh, caption=\centering{OpenMP output for question 1}, label={q1:openmplog}]{../q1/openmp.log}
+\lstinputlisting[language=sh, caption=\centering{Pthread output for question 1}, label={q1:pthreadlog}]{../q1/pthread.log}
+
 \section*{Q2:}
+
+\subsection*{Code:}
+\lstinputlisting[language=C, caption=\centering{MPI code for question 2}, label={q2:mpi}]{../q2/mpi.c}
+\lstinputlisting[language=C, caption=\centering{OpenMP code for question 2}, label={q2:openmp}]{../q2/openmp.c}
+\lstinputlisting[language=C, caption=\centering{Pthread code for question 2}, label={q2:pthread}]{../q2/pthread.c}
+
+\subsection*{Logs:}
+Of note is the different in values between the OpenMP log presented in Code Block \ref{q2:openmplog} and the MPI and pthread logs in Code Blocks \ref{q2:mpilog} and \ref{q2:pthreadlog}.
+This is however reasonable due to floating point operation inconsistency caused by the reduction operation.
+\lstinputlisting[language=sh, caption=\centering{MPI output for question 2}, label={q2:mpilog}]{../q2/mpi.log}
+\lstinputlisting[language=sh, caption=\centering{OpenMP output for question 2}, label={q2:openmplog}]{../q2/openmp.log}
+\lstinputlisting[language=sh, caption=\centering{Pthread output for question 2}, label={q2:pthreadlog}]{../q2/pthread.log}
 
 \section*{Q3:}
 
+\subsection*{Code:}
+\lstinputlisting[language=C, caption=\centering{OpenMP code for question 3}, label={q3:openmp}]{../q3/openmp.c}
+
+\subsection*{Logs:}
+\lstinputlisting[language=sh, caption=\centering{OpenMP output for question 3}, label={q3:openmplog}]{../q3/openmp.log}
+
 \section*{Q4:}
 
+\subsection*{Code:}
+\lstinputlisting[language=C, caption=\centering{OpenMP code for question 4}, label={q4:openmp}]{../q4/openmp.c}
+
+\subsection*{Logs:}
+\lstinputlisting[language=sh, caption=\centering{OpenMP output for question 4}, label={q4:openmplog}]{../q4/openmp.log}
+
 \section*{Q5:}
+
+\subsection*{Code:}
+\lstinputlisting[language=C, caption=\centering{OpenMP code for question 5}, label={q5:openmp}]{../q5/openmp.c}
+
+\subsection*{Logs:}
+\lstinputlisting[language=sh, caption=\centering{OpenMP output for question 5}, label={q5:openmplog}]{../q5/openmp.log}
 
 \section*{Q6:}
 
@@ -124,6 +161,9 @@ Assignment 1}
 
 \section*{Q9:}
 
+\begin{appendices}\label{appendix}
+  \lstinputlisting[language=make, caption=\centering{Make code used for all code}, label={a:make}]{../q1/makefile}
+\end{appendices}
 
 \newpage
 
