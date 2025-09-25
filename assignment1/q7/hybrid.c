@@ -5,6 +5,25 @@
 
 #define ARRAY_SIZE 256
 
+int nthreads;
+int *data;
+
+typedef struct {
+  int thread_id;
+  int *local_min;
+} threadsInfo;
+
+void *slave(void *arg) {
+  threadsInfo *t = (threadsInfo *)arg;
+  int id = t->thread_id;
+
+  for (int i = id; i < ARRAY_SIZE; i += nthreads) {
+    if (data[i] < *(t->local_min))
+      *(t->local_min) = data[i];
+  }
+  return NULL;
+}
+
 int main(int argc, char *argv[]) {
   int rank, size;
 
@@ -14,7 +33,6 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  int *data;
   int split = ARRAY_SIZE / size;
   int global_min;
 
@@ -45,8 +63,6 @@ int main(int argc, char *argv[]) {
     // printf("\n");
     printf("Global min = %d", global_min);
   }
-
-  free(data);
 
   MPI_Finalize();
   return 0;
