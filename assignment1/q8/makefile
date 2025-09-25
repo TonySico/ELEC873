@@ -1,53 +1,59 @@
 # Compiler settings
-MPICC   = mpicc
-OMPCC   = gcc -fopenmp
-PTHCC   = gcc -pthread
+MPISCC    = mpicc
+MPIDCC    = mpicc
+MANCC     = gcc 
+MANDISPCC = gcc 
 
 # Executable names
-MPI_EXE     = mpi
-OPENMP_EXE  = openmp
-PTHREAD_EXE = pthread
+MPIS_EXE     = mpi_static
+MPID_EXE     = mpi_dynamic
+MAN_EXE     = man
+MANDISP_EXE = mandisp
 
 # Sources
-MPI_SRC     = mpi.c
-OPENMP_SRC  = openmp.c
-PTHREAD_SRC = pthread.c
+MPIS_SRC     = mpi_static.c
+MPID_SRC     = mpi_dynamic.c
+MAN_SRC  		= mandelbrot-calculation.c
+MANDISP_SRC  		= mandelbrot-display.c
 
 # Default build rule
-build: $(MPI_EXE) $(OPENMP_EXE) $(PTHREAD_EXE)
+build: $(MPIS_EXE) $(MPID_EXE) $(MAN_EXE) $(MANDISP_EXE) 
 
-$(MPI_EXE): $(MPI_SRC)
-	$(MPICC) -o $@ $<
+$(MPIS_EXE): $(MPIS_SRC)
+	$(MPISCC) -o $@ $<
 
-$(OPENMP_EXE): $(OPENMP_SRC)
-	$(OMPCC) -o $@ $<
+$(MPID_EXE): $(MPID_SRC)
+	$(MPIDCC) -o $@ $<
 
-$(PTHREAD_EXE): $(PTHREAD_SRC)
-	$(PTHCC) -o $@ $<
+$(MAN_EXE): $(MAN_SRC)
+	$(MANCC) -o $@ $<
+
+$(MANDISP_EXE): $(MANDISP_SRC)
+	$(MANDISPCC) -o $@ $< -lX11 -lm
 
 # Run all programs with a user-specified number of processes/threads
 # Usage: make runall N=4
-runall: runm runo runp
+runall: runm runman rund
 
-runm:
+runms:
 ifndef n
 	$(error Please provide n, e.g. make runm n=4)
 endif
-	mpirun --oversubscribe -np $(n) ./$(MPI_EXE) 2>&1 | tee mpi.log
+	mpirun --oversubscribe -np $(n) ./$(MPIS_EXE) 2>&1 | tee mpi.log
 
-runo:
+runmd:
 ifndef n
-	$(error Please provide n, e.g. make runo n=4)
+	$(error Please provide n, e.g. make runm n=4)
 endif
-	OMP_NUM_THREADS=$(n) ./$(OPENMP_EXE) 2>&1 | tee openmp.log
+	mpirun --oversubscribe -np $(n) ./$(MPID_EXE) 2>&1 | tee mpi.log
 
-runp:
-ifndef n
-	$(error Please provide n, e.g. make runp n=4)
-endif
-	./$(PTHREAD_EXE) $(n) 2>&1 | tee pthread.log
+runman:
+	./$(MAN_EXE) 
+
+rund:
+	./$(MANDISP_EXE) 
 
 # Clean up binaries and logs
 clean:
-	rm -f $(MPI_EXE) $(OPENMP_EXE) $(PTHREAD_EXE) *.log
+	rm -f $(MPIS_EXE) $(MPID_EXE) $(MAN_EXE) $(MANDISP_EXE) *.log
 

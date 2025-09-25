@@ -6,7 +6,7 @@
 #define ARRAY_SIZE 256
 
 int main(int argc, char *argv[]) {
-  srand(time(NULL));
+  srand(20214793);
   int *data;
   int global_min;
 
@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
   //   printf("%d,", data[i]);
   // }
   // printf("\n");
-  printf("Global min = %d", global_min);
+  printf("Global min = %d\n", global_min);
 
   return 0;
 }

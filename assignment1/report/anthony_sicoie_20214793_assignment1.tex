@@ -1,3 +1,4 @@
+
 \documentclass[11pt]{article}
 \usepackage[letterpaper, margin=1in]{geometry}
 
@@ -110,7 +111,7 @@ Assignment 1}
 
 \subsection*{Logs:}
 All code was run with 5 processes/threads, though any number can be set via the Makefile \texttt{make runall n=<number\_of\_threads/processes>} directive. 
-This can be seen in the Code Block \ref{a:make} of the appendix where the makefile code is provided
+% This can be seen in the Code Block \ref{a:make} of the appendix where the makefile code is provided
 \lstinputlisting[language=sh, caption=\centering{MPI output for question 1}, label={q1:mpilog}]{../q1/mpi.log}
 \lstinputlisting[language=sh, caption=\centering{OpenMP output for question 1}, label={q1:openmplog}]{../q1/openmp.log}
 \lstinputlisting[language=sh, caption=\centering{Pthread output for question 1}, label={q1:pthreadlog}]{../q1/pthread.log}
@@ -140,26 +141,26 @@ This is however reasonable due to floating point operation inconsistency caused 
 \section*{Q4:}
 
 \subsection*{Code:}
-\lstinputlisting[language=C, caption=\centering{OpenMP code for question 4}, label={q4:openmp}]{../q4/openmp.c}
+\lstinputlisting[language=C, caption=\centering{OpenMP code for question 4}, label={q4:openmp}]{../q4/mpi.c}
 
 \subsection*{Logs:}
-\lstinputlisting[language=sh, caption=\centering{OpenMP output for question 4}, label={q4:openmplog}]{../q4/openmp.log}
+\lstinputlisting[language=sh, caption=\centering{OpenMP output for question 4}, label={q4:openmplog}]{../q4/mpi.log}
 
 \section*{Q5:}
 
 \subsection*{Code:}
-\lstinputlisting[language=C, caption=\centering{OpenMP code for question 5}, label={q5:openmp}]{../q5/openmp.c}
+\lstinputlisting[language=C, caption=\centering{OpenMP code for question 5}, label={q5:openmp}]{../q5/mpi.c}
 
 \subsection*{Logs:}
-\lstinputlisting[language=sh, caption=\centering{OpenMP output for question 5}, label={q5:openmplog}]{../q5/openmp.log}
+\lstinputlisting[language=sh, caption=\centering{OpenMP output for question 5}, label={q5:openmplog}]{../q5/mpi.log}
 
 \section*{Q6:}
 
 \subsection*{Code:}
-\lstinputlisting[language=C, caption=\centering{OpenMP code for question 6}, label={q6:openmp}]{../q6/openmp.c}
+\lstinputlisting[language=C, caption=\centering{OpenMP code for question 6}, label={q6:openmp}]{../q6/mpi.c}
 
 \subsection*{Logs:}
-\lstinputlisting[language=sh, caption=\centering{OpenMP output for question 6}, label={q6:openmplog}]{../q6/openmp.log}
+\lstinputlisting[language=sh, caption=\centering{OpenMP output for question 6}, label={q6:openmplog}]{../q6/mpi.log}
 
 \section*{Q7:}
 

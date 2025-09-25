@@ -8,7 +8,7 @@
 int main(int argc, char *argv[]) {
   int rank, size;
 
-  srand(time(NULL));
+  srand(20214793);
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     //   printf("%d,", data[i]);
     // }
     // printf("\n");
-    printf("Global min = %d", global_min);
+    printf("Global min = %d\n", global_min);
   }
 
   free(data);

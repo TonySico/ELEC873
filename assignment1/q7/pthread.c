@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
   int i;
   int *local_mins;
 
-  srand(time(NULL));
+  srand(20214793);
 
   data = malloc(ARRAY_SIZE * sizeof(int));
   for (i = 0; i < ARRAY_SIZE; i++)
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
   //   printf("%d,", data[i]);
   // }
   // printf("\n");
-  printf("Global min = %d", global_min);
+  printf("Global min = %d\n", global_min);
 
   return 0;
 }
