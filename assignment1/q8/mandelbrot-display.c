@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define X_RESN 800 /* x resolution */
-#define Y_RESN 800 /* y resolution */
+#define X_RESN 15000 /* x resolution */
+#define Y_RESN 15000 /* y resolution */
 
 int main() {
   Window win;                        /* initialization for a window */
@@ -38,8 +38,8 @@ int main() {
   /* Open file containing data */
   FILE *input_file;
 
-  // input_file = fopen("mandelbrot_data_static.txt", "r");
-  input_file = fopen("mandelbrot_data_dynamic.txt", "r");
+  // input_file = fopen("mandelbrot_data_dynamic.txt", "r");
+  input_file = fopen("mandelbrot_data_static.txt", "r");
   if (input_file == NULL) {
     printf("Error opening file \n");
     return -1;
@@ -111,8 +111,27 @@ int main() {
     for (j = 0; j < Y_RESN; j++) {
 
       fscanf(input_file, "%d\n", &k);
-      if (k == 100)
-        XDrawPoint(display, win, gc, j, i);
+      unsigned long color;
+
+      // Map iteration ranges to colour channels
+      if (k >= 75 && k <= 100) {
+        // Red varies from 0 (k=75) to 255 (k=100)
+        int r = (k - 75) * 255 / (100 - 75);
+        color = (r << 16); // RRRR RRRR 0000 0000 0000 0000
+      } else if (k >= 50 && k <= 74) {
+        // Green varies from 0 (k=50) to 255 (k=74)
+        int g = (k - 50) * 255 / (74 - 50);
+        color = (g << 8); // 0000 0000 GGGG GGGG 0000 0000
+      } else if (k >= 0 && k <= 49) {
+        // Blue varies from 0 (k=0) to 255 (k=49)
+        int b = k * 255 / 49;
+        color = b; // 0000 0000 0000 0000 BBBB BBBB
+      } else {
+        color = 0; // black for any out-of-range values
+      }
+
+      XSetForeground(display, gc, color);
+      XDrawPoint(display, win, gc, j, i);
     }
 
   fclose(input_file);

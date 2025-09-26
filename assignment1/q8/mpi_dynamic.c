@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define X_RESN 800 /* x resolution */
-#define Y_RESN 800 /* y resolution */
+#define X_RESN 6400 /* x resolution */
+#define Y_RESN 6400 /* y resolution */
 
 typedef struct complextype {
   float real, imag;
@@ -73,8 +73,8 @@ int main(int argc, char *argv[]) {
 
       for (i = 0; i < Y_RESN; i++) {
         z.real = z.imag = 0.0;
-        c.real = ((float)i - 400.0) / 200.0;
-        c.imag = ((float)work_row - 400.0) / 200.0;
+        c.real = ((float)i - (Y_RESN / 2.0)) / (Y_RESN / 4.0);
+        c.imag = ((float)work_row - (X_RESN / 2.0)) / (X_RESN / 4.0);
         k[i] = 0;
 
         do { /* iterate for pixel color */

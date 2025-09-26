@@ -33,19 +33,22 @@ $(MANDISP_EXE): $(MANDISP_SRC)
 
 # Run all programs with a user-specified number of processes/threads
 # Usage: make runall N=4
-runall: runm runman rund
+runall: runms runmd runman rund
+runds:
+	$(MAKE) runms n=4
+	$(MAKE) rund
 
 runms:
 ifndef n
 	$(error Please provide n, e.g. make runm n=4)
 endif
-	mpirun --oversubscribe -np $(n) ./$(MPIS_EXE) 2>&1 | tee mpi.log
+	mpirun --oversubscribe -np $(n) ./$(MPIS_EXE) 2>&1
 
 runmd:
 ifndef n
 	$(error Please provide n, e.g. make runm n=4)
 endif
-	mpirun --oversubscribe -np $(n) ./$(MPID_EXE) 2>&1 | tee mpi.log
+	mpirun --oversubscribe -np $(n) ./$(MPID_EXE) 2>&1
 
 runman:
 	./$(MAN_EXE) 
