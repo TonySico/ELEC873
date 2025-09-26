@@ -30,7 +30,8 @@ int depth(int rank, int size) {
 }
 
 int main(int argc, char *argv[]) {
-  int rank, size, *data, count, tempInt, dataCount = 0;
+  int rank, size, *data, count, tempInt, dest, total, returnSource,
+      dataCount = 0;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -39,58 +40,53 @@ int main(int argc, char *argv[]) {
   MPI_Status status;
   int myDepth = depth(rank, size);
   int maxDepth = ((int)ceil(log((double)size) / log((double)2)));
+  int elemCount = ARRAYSIZE / (pow(2, myDepth));
+  int bufferSize = elemCount * sizeof(int);
+  data = malloc(bufferSize);
+  count = myDepth;
+
+  int testData[1000];
 
   if (!rank) {
-    int total;
-    data = malloc(ARRAYSIZE * sizeof(int));
-    for (int i = 0; i < ARRAYSIZE; i++)
+    for (int i = 0; i < ARRAYSIZE; i++) {
       data[i] = i;
-
-    for (count = 0; count < size; count++) {
-      MPI_Send(const void *buf, int count, MPI_INT, int dest, int tag,
-               MPI_COMM_WORLD);
+      testData[i] = i;
     }
-
-    while (count) {
-      MPI_Recv(&tempInt, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
-               MPI_COMM_WORLD, &status);
-      total += tempInt;
-      count--;
-    }
+    dest = size / 2;
   }
 
   if (rank) {
-    int elemCount = ;
-    int bufferSize = ;
-    data = malloc();
-    count = myDepth;
-
-    MPI_Recv(void *buf, int count, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
+    MPI_Recv(data, elemCount, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
              MPI_COMM_WORLD, &status);
 
-    while (count < maxDepth) {
-      // send data till u have counted to the maxDepth
-      elemCount /= 2;
-      // figure out how to encode ranks in tag, potentially use each tens place
-      // to retrace steps back up, essentially shifting by one decimal each time
-      MPI_Send(const void *buf, elemCount, MPI_INT, int dest, int tag,
-               MPI_COMM_WORLD);
-      data = realloc(data, elemCount * sizeof(int));
-      count++;
-    }
+    returnSource = status.MPI_SOURCE;
+    dest = rank + ((rank - status.MPI_SOURCE) / 2);
+  }
 
-    int localSum = add(data, elemCount);
+  while (count < maxDepth) {
+    elemCount /= 2;
+    MPI_Send(&data[elemCount], elemCount, MPI_INT, dest, 0, MPI_COMM_WORLD);
+    dest = rank + ((dest - rank) / 2);
+    data = realloc(data, elemCount * sizeof(int));
+    count++;
+  }
 
-    while (count > myDepth) {
-      MPI_Recv(&tempInt, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
-               MPI_COMM_WORLD, &status);
-      localSum += tempInt;
-      count--;
-    }
+  total = add(data, elemCount);
+
+  while (count > myDepth) {
+    MPI_Recv(&tempInt, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD,
+             &status);
+    total += tempInt;
+    count--;
+  }
+
+  if (rank) {
+    MPI_Send(&total, 1, MPI_INT, returnSource, 0, MPI_COMM_WORLD);
   }
 
   if (!rank) {
-    int verify = add(data, ARRAYSIZE);
+    int verify = add(testData, ARRAYSIZE);
+    printf("verified total = %d, calculated total = %d", verify, total);
   }
 
   MPI_Finalize();
