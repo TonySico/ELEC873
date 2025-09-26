@@ -1,4 +1,3 @@
-#include <math.h>
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +13,7 @@ typedef struct complextype {
 int main(int argc, char *argv[]) {
   int rank, size;
 
-  int i, j, *k, *tempBuf;
+  int i, j, *k;
   Compl z, c;
   float lengthsq, temp;
 
@@ -23,63 +22,71 @@ int main(int argc, char *argv[]) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   MPI_Status status;
-  int WORK = 1;
 
-  int work_row;
+  int startRow = 0;
 
   if (!rank) {
     k = malloc(X_RESN * Y_RESN * sizeof(int));
-    tempBuf = malloc(Y_RESN * sizeof(int));
   }
 
-  if (rank)
-    k = malloc(Y_RESN * sizeof(int));
-
   if (!rank) {
-    int reqRank;
-    work_row = 0;
     int count = 0;
     int rowCount; // figure out this math
 
-    for (reqRank = 1; reqRank < size; reqRank++) {
-      MPI_Send(&work_row, 1, MPI_INT, reqRank, 0, MPI_COMM_WORLD);
+    for (int sendRank = 1; sendRank < size; sendRank++) {
+      int offset = (sendRank < (X_RESN % (size - 1))) ? 1 : 0;
+      rowCount = (X_RESN / (size - 1)) + offset;
+
+      MPI_Send(&startRow, 1, MPI_INT, sendRank, rowCount, MPI_COMM_WORLD);
+
       count++;
+      startRow += rowCount;
     }
 
     while (count != 0) {
-      MPI_Recv(tempBuf, Y_RESN, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
-               MPI_COMM_WORLD, &status);
-      count--;
-      // figures out whether or not the new buffer needs to be offset
-      int offset = (status.MPI_SOURCE < (X_RESN % size)) ? 1 : 0;
-      int bufferSize = (floor((double)X_RESN / size) + offset) * sizeof(int);
+      int elemCount = (X_RESN / (size - 1)) + 1;
+      int bufferSize = elemCount * Y_RESN * sizeof(int);
 
-      memcpy(&k[status.MPI_TAG * Y_RESN], tempBuf, bufferSize);
+      int *tempBuf = malloc(bufferSize);
+
+      MPI_Recv(tempBuf, elemCount * Y_RESN, MPI_INT, MPI_ANY_SOURCE,
+               MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      count--;
+
+      int offset = (status.MPI_SOURCE < (X_RESN % (size - 1))) ? 0 : 1;
+
+      // figure out whether or not the new buffer needs to be offset
+      memcpy(&k[status.MPI_TAG * Y_RESN], tempBuf,
+             (elemCount - offset) * sizeof(int));
+      free(tempBuf);
     }
   }
 
   if (rank) {
-    MPI_Recv(&work_row, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Recv(&startRow, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-    for (i = rank * work_row; i < work_row * (rank + 1); i++)
+    int rowCount = status.MPI_TAG;
+
+    k = malloc(rowCount * Y_RESN * sizeof(int));
+
+    for (i = 0; i < rowCount; i++)
       for (j = 0; j < Y_RESN; j++) {
 
         z.real = z.imag = 0.0;
         c.real = ((float)j - 400.0) / 200.0;
         c.imag = ((float)i - 400.0) / 200.0;
-        k[(i - rank * work_row) * Y_RESN + j] = 0;
+        k[i * Y_RESN + j] = 0;
 
         do { /* iterate for pixel color */
           temp = z.real * z.real - z.imag * z.imag + c.real;
           z.imag = 2.0 * z.real * z.imag + c.imag;
           z.real = temp;
           lengthsq = z.real * z.real + z.imag * z.imag;
-          k[(i - rank * work_row) * Y_RESN + j]++;
-        } while (lengthsq < 4.0 && k[(i - rank * work_row) * Y_RESN + j] < 100);
+          k[i * Y_RESN + j]++;
+        } while (lengthsq < 4.0 && k[i * Y_RESN + j] < 100);
       }
-
-    MPI_Gather(k, work_row * Y_RESN, MPI_INT, k, work_row * Y_RESN, MPI_INT,
-               work_row, MPI_COMM_WORLD);
+    MPI_Send(k, rowCount * Y_RESN, MPI_INT, 0, startRow, MPI_COMM_WORLD);
+    free(k);
   }
 
   if (rank == 0) {
@@ -99,11 +106,6 @@ int main(int argc, char *argv[]) {
 
     fclose(output);
   }
-
-  free(k);
-
-  if (!rank)
-    free(tempBuf);
 
   MPI_Finalize();
   return 0;

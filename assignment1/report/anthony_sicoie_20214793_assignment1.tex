@@ -124,8 +124,6 @@ All code was run with 5 processes/threads, though any number can be set via the 
 \lstinputlisting[language=C, caption=\centering{Pthread code for question 2}, label={q2:pthread}]{../q2/pthread.c}
 
 \subsection*{Logs:}
-Of note is the different in values between the OpenMP log presented in Code Block \ref{q2:openmplog} and the MPI and pthread logs in Code Blocks \ref{q2:mpilog} and \ref{q2:pthreadlog}.
-This is however reasonable due to floating point operation inconsistency caused by the reduction operation.
 \lstinputlisting[language=sh, caption=\centering{MPI output for question 2}, label={q2:mpilog}]{../q2/mpi.log}
 \lstinputlisting[language=sh, caption=\centering{OpenMP output for question 2}, label={q2:openmplog}]{../q2/openmp.log}
 \lstinputlisting[language=sh, caption=\centering{Pthread output for question 2}, label={q2:pthreadlog}]{../q2/pthread.log}
@@ -163,6 +161,7 @@ This is however reasonable due to floating point operation inconsistency caused 
 \lstinputlisting[language=sh, caption=\centering{MPI output for question 6}, label={q6:mpilog}]{../q6/mpi.log}
 
 \section*{Q7:}
+\subsection*{Analysis:}
 
 \subsection*{Code:}
 \lstinputlisting[language=C, caption=\centering{MPI code for question 7}, label={q7:mpi}]{../q7/mpi.c}
@@ -177,6 +176,13 @@ This is however reasonable due to floating point operation inconsistency caused 
 \lstinputlisting[language=sh, caption=\centering{Hybrid (MPI+OpenMP) output for question 7}, label={q7:hybridlog}]{../q7/hybrid.log}
 
 \section*{Q8:}
+\subsection*{Analysis:}
+
+\subsection*{Code:}
+\lstinputlisting[language=C, caption=\centering{MPI code for question 8 static assignment}, label={q8:mpiStatic}]{../q8/mpi_static.c}
+\lstinputlisting[language=C, caption=\centering{MPI code for question 8 dynamic assignment}, label={q8:mpiStatic}]{../q8/mpi_dynamic.c}
+
+\subsection*{Output:}
 
 \section*{Q9:}
 

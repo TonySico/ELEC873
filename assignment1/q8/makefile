@@ -26,7 +26,7 @@ $(MPID_EXE): $(MPID_SRC)
 	$(MPIDCC) -o $@ $<
 
 $(MAN_EXE): $(MAN_SRC)
-	$(MANCC) -o $@ $<
+	$(MANCC) -o $@ $< 
 
 $(MANDISP_EXE): $(MANDISP_SRC)
 	$(MANDISPCC) -o $@ $< -lX11 -lm

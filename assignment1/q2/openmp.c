@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
 
   double x, pi = 0.0;
 
-#pragma omp parallel for reduction(+ : pi)
+#pragma omp parallel for reduction(+ : pi) private(x)
   for (long i = 0; i < num_steps; i++) {
     x = (i + 0.5) * step;
     pi += 4.0 / (1.0 + x * x);
