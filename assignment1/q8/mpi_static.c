@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define X_RESN 15000 /* x resolution */
-#define Y_RESN 15000 /* y resolution */
+#define X_RESN 800 /* x resolution */
+#define Y_RESN 800 /* y resolution */
 
 typedef struct complextype {
   float real, imag;

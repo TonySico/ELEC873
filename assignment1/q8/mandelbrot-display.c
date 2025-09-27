@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define X_RESN 15000 /* x resolution */
-#define Y_RESN 15000 /* y resolution */
+#define X_RESN 800 /* x resolution */
+#define Y_RESN 800 /* y resolution */
 
 int main() {
   Window win;                        /* initialization for a window */
@@ -113,22 +113,12 @@ int main() {
       fscanf(input_file, "%d\n", &k);
       unsigned long color;
 
-      // Map iteration ranges to colour channels
-      if (k >= 75 && k <= 100) {
-        // Red varies from 0 (k=75) to 255 (k=100)
-        int r = (k - 75) * 255 / (100 - 75);
-        color = (r << 16); // RRRR RRRR 0000 0000 0000 0000
-      } else if (k >= 50 && k <= 74) {
-        // Green varies from 0 (k=50) to 255 (k=74)
-        int g = (k - 50) * 255 / (74 - 50);
-        color = (g << 8); // 0000 0000 GGGG GGGG 0000 0000
-      } else if (k >= 0 && k <= 49) {
-        // Blue varies from 0 (k=0) to 255 (k=49)
-        int b = k * 255 / 49;
-        color = b; // 0000 0000 0000 0000 BBBB BBBB
-      } else {
-        color = 0; // black for any out-of-range values
-      }
+      /********** NEON GLOW **********/
+      // Bright neon-like gradient from blue->pink->purple
+      int r_neon = (int)(127.0 + 127.0 * sin(k * 0.3));
+      int g_neon = (int)(127.0 + 127.0 * sin(k * 0.3 + 2));
+      int b_neon = (int)(127.0 + 127.0 * sin(k * 0.3 + 4));
+      color = (r_neon << 16) | (g_neon << 8) | b_neon;
 
       XSetForeground(display, gc, color);
       XDrawPoint(display, win, gc, j, i);
