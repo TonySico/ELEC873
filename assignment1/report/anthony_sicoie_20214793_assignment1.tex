@@ -163,6 +163,7 @@ All code was run with 5 processes/threads, though any number can be set via the 
 \section*{Q7:}
 \subsection*{Analysis:}
 
+
 \subsection*{Code:}
 \lstinputlisting[language=C, caption=\centering{MPI code for question 7}, label={q7:mpi}]{../q7/mpi.c}
 \lstinputlisting[language=C, caption=\centering{OpenMP code for question 7}, label={q7:openmp}]{../q7/openmp.c}
@@ -193,7 +194,11 @@ All code was run with 5 processes/threads, though any number can be set via the 
 \lstinputlisting[language=sh, caption=\centering{MPI output for question 9}, label={q9:mpilog}]{../q9/mpi.log}
 
 \begin{appendices}\label{appendix}
-  \lstinputlisting[language=make, caption=\centering{Make code used for all code}, label={a:make}]{../q1/makefile}
+  \lstinputlisting[language=make, caption=\centering{Makefile template used for all code}, label={a:make}]{../q1/makefile}
+  \lstinputlisting[language=make, caption=\centering{Bash script used to vary process, thread, and array size for question 7}, label={a:make}]{../q7/run.sh}
+  \lstinputlisting[language=make, caption=\centering{Python script used to plot results for question 7}, label={a:make}]{../q7/results.py}
+  \lstinputlisting[language=make, caption=\centering{Bash script used to process counts for question 8}, label={a:make}]{../q8/run.sh}
+  \lstinputlisting[language=make, caption=\centering{Python script used to plot results for question 9}, label={a:make}]{../q8/results.py}
 \end{appendices}
 
 \newpage
