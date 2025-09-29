@@ -20,6 +20,7 @@ int main() {
   double total_time = 0.0;
 
   for (int run = 0; run < N_RUNS; run++) {
+    clock_t tmp = clock();
     clock_t start = clock();
 
     /* Calculate and save points into array */
@@ -58,7 +59,8 @@ int main() {
 
     fclose(output);
     clock_t end = clock();
-    total_time += ((double)(end - start) / CLOCKS_PER_SEC);
+    double timer_overhead = start - tmp;
+    total_time += ((double)(end - start - timer_overhead) / CLOCKS_PER_SEC);
   }
 
   double avg_time = total_time / N_RUNS;

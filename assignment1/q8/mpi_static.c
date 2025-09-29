@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
   double total_time = 0.0;
 
   for (int run = 0; run < N_RUNS; run++) {
+    double tmp = MPI_Wtime();
     double start = MPI_Wtime();
     int startRow = 0;
 
@@ -114,7 +115,8 @@ int main(int argc, char *argv[]) {
       free(k);
 
     double end = MPI_Wtime();
-    total_time += (end - start);
+    double timer_overhead = start - tmp;
+    total_time += (end - start - timer_overhead);
   }
 
   double avg_time = total_time / N_RUNS;
