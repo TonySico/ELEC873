@@ -1,3 +1,5 @@
+# Anthony Sicoie (20214793)
+
 # Compiler settings
 MPICC   = mpicc
 OMPCC   = gcc -fopenmp
@@ -30,8 +32,6 @@ $(PTHREAD_EXE): $(PTHREAD_SRC)
 $(HYBRID_EXE): $(HYBRID_SRC)
 	$(MPICC) -fopenmp -o $@ $<
 
-# Run all programs with a user-specified number of processes/threads
-# Usage: make runall n=4
 runall: runm runo runp runh
 
 runm:
@@ -61,7 +61,6 @@ ifndef nt
 endif
 	OMP_NUM_THREADS=$(nt) mpirun --oversubscribe -np $(np) ./$(HYBRID_EXE) 2>&1 | tee hybrid.log
 
-# Clean up binaries and logs
 clean:
 	rm -f $(MPI_EXE) $(OPENMP_EXE) $(PTHREAD_EXE) $(HYBRID_EXE) *.log
 

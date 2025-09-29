@@ -1,7 +1,8 @@
+// Anthony Sicoie (20214793)
+
 #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #define ARRAY_SIZE 256
 
@@ -21,10 +22,12 @@ int main(int argc, char *argv[]) {
   }
 
   // For verification
+  // int tempMin = data[0];
   // for (int i = 0; i < ARRAY_SIZE; i++) {
-  //   printf("%d,", data[i]);
+  //   if (data[i] < tempMin)
+  //     tempMin = data[i];
   // }
-  // printf("\n");
+  // printf("Global min = %d, verify min = %d\n", global_min, tempMin);
   printf("Global min = %d\n", global_min);
 
   return 0;

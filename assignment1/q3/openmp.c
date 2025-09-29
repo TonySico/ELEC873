@@ -1,3 +1,5 @@
+// Anthony Sicoie (20214793)
+
 #include <omp.h>
 #include <stdio.h>
 

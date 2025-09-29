@@ -1,3 +1,5 @@
+// Anthony Sicoie (20214793)
+
 #include <math.h>
 #include <mpi.h>
 #include <stdio.h>

@@ -1,3 +1,5 @@
+# Anthony Sicoie (20214793)
+
 # Compiler settings
 MPISCC    = mpicc
 MPIDCC    = mpicc
@@ -16,7 +18,6 @@ MPID_SRC     = mpi_dynamic.c
 MAN_SRC  		= mandelbrot-calculation.c
 MANDISP_SRC  		= mandelbrot-display.c
 
-# Default build rule
 build: $(MPIS_EXE) $(MPID_EXE) $(MAN_EXE) $(MANDISP_EXE) 
 
 $(MPIS_EXE): $(MPIS_SRC)
@@ -31,8 +32,6 @@ $(MAN_EXE): $(MAN_SRC)
 $(MANDISP_EXE): $(MANDISP_SRC)
 	$(MANDISPCC) -o $@ $< -lX11 -lm
 
-# Run all programs with a user-specified number of processes/threads
-# Usage: make runall N=4
 runall: runms runmd runman rund
 runds:
 	$(MAKE) runms n=4
@@ -56,7 +55,6 @@ runman:
 rund:
 	./$(MANDISP_EXE) 
 
-# Clean up binaries and logs
 clean:
 	rm -f $(MPIS_EXE) $(MPID_EXE) $(MAN_EXE) $(MANDISP_EXE) *.log
 

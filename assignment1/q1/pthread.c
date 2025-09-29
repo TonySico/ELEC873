@@ -1,3 +1,5 @@
+// Anthony Sicoie (20214793)
+
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>

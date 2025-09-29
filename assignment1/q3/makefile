@@ -1,3 +1,5 @@
+# Anthony Sicoie (20214793)
+
 # Compiler settings
 OMPCC   = gcc -fopenmp
 
@@ -7,7 +9,6 @@ OPENMP_EXE  = openmp
 # Sources
 OPENMP_SRC  = openmp.c
 
-# Default build rule
 build: $(OPENMP_EXE) 
 
 $(OPENMP_EXE): $(OPENMP_SRC)
@@ -19,7 +20,6 @@ ifndef n
 endif
 	OMP_NUM_THREADS=$(n) ./$(OPENMP_EXE) 2>&1 | tee openmp.log
 
-# Clean up binaries and logs
 clean:
 	rm -f $(OPENMP_EXE) *.log
 

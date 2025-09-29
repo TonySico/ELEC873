@@ -1,3 +1,5 @@
+# Anthony Sicoie (20214793)
+
 # Compiler settings
 MPICC   = mpicc
 OMPCC   = gcc -fopenmp
@@ -13,7 +15,6 @@ MPI_SRC     = mpi.c
 OPENMP_SRC  = openmp.c
 PTHREAD_SRC = pthread.c
 
-# Default build rule
 build: $(MPI_EXE) $(OPENMP_EXE) $(PTHREAD_EXE)
 
 $(MPI_EXE): $(MPI_SRC)
@@ -25,8 +26,6 @@ $(OPENMP_EXE): $(OPENMP_SRC)
 $(PTHREAD_EXE): $(PTHREAD_SRC)
 	$(PTHCC) -o $@ $<
 
-# Run all programs with a user-specified number of processes/threads
-# Usage: make runall N=4
 runall: runm runo runp
 
 runm:
@@ -47,7 +46,6 @@ ifndef n
 endif
 	./$(PTHREAD_EXE) $(n) 2>&1 | tee pthread.log
 
-# Clean up binaries and logs
 clean:
 	rm -f $(MPI_EXE) $(OPENMP_EXE) $(PTHREAD_EXE) *.log
 
