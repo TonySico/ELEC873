@@ -21,9 +21,10 @@ for (p, t), subset in df.groupby(["processes", "threads"]):
 
 plt.xlabel("Array Size")
 plt.ylabel("Average Time (ms)")
-plt.title("Hybrid MPI+OpenMP Performance")
+plt.title("Local: Hybrid MPI+OpenMP Performance")
 plt.legend()
 plt.grid(True)
+plt.yscale("log", base=2)
 plt.xscale("log", base=2)
 plt.tight_layout()
 plt.savefig("../report/images/q7.png", dpi=300)

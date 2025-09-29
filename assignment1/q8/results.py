@@ -20,14 +20,17 @@ plt.plot(dynamic["processes"], dynamic["time"], marker="s", label="Dynamic")
 
 # Horizontal line for sequential
 plt.axhline(
-    y=seq_time_ms, color="r", linestyle="--", label=f"Sequential ({seq_time_ms:.2f} ms)"
+    y=seq_time_ms,
+    color="r",
+    linestyle="--",
+    label=f"Baseline (Sequential) ({seq_time_ms:.2f} ms)",
 )
 
 # Log2 x-scale and labels
 plt.xscale("log", base=2)
 plt.xlabel("Number of Processes")
 plt.ylabel("Time (ms)")
-plt.title("Hybrid MPI Performance")
+plt.title("Local: Static vs Dynamic vs Sequential MPI Performance")
 plt.legend()
 plt.grid(True, which="both", ls="--", lw=0.5)
 
