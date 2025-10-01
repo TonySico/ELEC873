@@ -32,7 +32,7 @@ $(PTHREAD_EXE): $(PTHREAD_SRC)
 $(HYBRID_EXE): $(HYBRID_SRC)
 	$(MPICC) -fopenmp -o $@ $<
 
-runall: runm runo runp runh
+runall: runm runo runp
 
 runm:
 ifndef n

@@ -14,6 +14,8 @@ build: $(OPENMP_EXE)
 $(OPENMP_EXE): $(OPENMP_SRC)
 	$(OMPCC) -o $@ $<
 
+runall: runo 
+
 runo:
 ifndef n
 	$(error Please provide n, e.g. make runo n=4)

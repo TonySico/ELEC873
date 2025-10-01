@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 
   if (!rank) {
     int verify = add(testData, ARRAYSIZE);
-    printf("verified total = %d, calculated total = %d", verify, total);
+    printf("verified total = %d, calculated total = %d\n", verify, total);
   }
 
   MPI_Finalize();
