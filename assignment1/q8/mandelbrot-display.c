@@ -113,12 +113,25 @@ int main() {
       fscanf(input_file, "%d\n", &k);
       unsigned long color;
 
-      /********** NEON GLOW **********/
       // Bright neon-like gradient from blue->pink->purple
       int r_neon = (int)(127.0 + 127.0 * sin(k * 0.3));
       int g_neon = (int)(127.0 + 127.0 * sin(k * 0.3 + 2));
       int b_neon = (int)(127.0 + 127.0 * sin(k * 0.3 + 4));
       color = (r_neon << 16) | (g_neon << 8) | b_neon;
+
+      // Scaling RGB values based on k value
+      if (k >= 65 && k <= 100) {
+        int r = (k - 75) * 255 / (100 - 75);
+        color = (r << 16); // RRRR RRRR 0000 0000 0000 0000
+      } else if (k >= 50 && k <= 74) {
+        int g = (k - 50) * 255 / (74 - 50);
+        color = (g << 8); // 0000 0000 GGGG GGGG 0000 0000
+      } else if (k >= 0 && k <= 49) {
+        int b = k * 255 / 49;
+        color = b; // 0000 0000 0000 0000 BBBB BBBB
+      } else {
+        color = 0; // black for any out-of-range values
+      }
 
       XSetForeground(display, gc, color);
       XDrawPoint(display, win, gc, j, i);
