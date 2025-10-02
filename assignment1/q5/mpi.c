@@ -17,6 +17,7 @@ int main(int argc, char *argv[]) {
 
   q = (int)cbrt((double)size);
 
+  // Code based on slides modified slightly to allow for 3 dimensions instead
   dim_sizes[0] = dim_sizes[1] = dim_sizes[2] = q;
   wrap_around[0] = wrap_around[1] = wrap_around[2] = 1;
 
@@ -31,6 +32,7 @@ int main(int argc, char *argv[]) {
       rank, my_grid_rank, coordinates[0], coordinates[1], coordinates[2],
       grid_rank);
 
+  // fix one dim to allow for full planes to be used
   free_coords[0] = 0;
   free_coords[1] = 1;
   free_coords[2] = 1;

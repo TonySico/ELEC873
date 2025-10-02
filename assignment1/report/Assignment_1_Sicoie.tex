@@ -101,14 +101,22 @@ Assignment 1}
 
 \maketitle
 
+\section*{Preamble}
+
+For each question code was developed locally and tested on both my machine (Ryzen 9 7950x, 64 GD Ram) as well as the KNL server.
+The code was built using makefiles following a similar format to the one present in Code Block \ref{a:make} of the appendix.
+This is the Makefile template that all questions also followed, with appropriate changes based on the question requirements for each one; where questions only required a single implementation (only OpenMP etc.), only that implementation was accounted for in.
+Furthermore, the Makefile was also used to run the code in all cases other than those utilizing bash scripts; in those cases it is mentioned explicitly.
+Comments are provided throughout the Code Blocks for any noteworthy or special conditions I felt were worth highlighting.
+As such discussion of code within the report is minimal, but rather the comments are intended to describe how the code functions.
+
 
 \section*{Q1:}
 
 Code Blocks \ref{q1:mpi}, \ref{q1:openmp}, and \ref{q1:pthread} present the question 1 code using MPI, OpenMP, and Pthreads respectively to print basic "Hello World" messages.
 The output of the code can be found in the Figure \ref{fig:q1}.
 All code was run with 8 processes/threads, though any number can be set via the \texttt{Makefile} \texttt{make runall n=<number\_of\_threads/processes>} directive. 
-This can be seen in the Code Block \ref{a:make} of the appendix where the makefile code is provided.
-This is the \texttt{Makefile} template that all other questions also followed, with appropriate changes based on the question requirements for each one.
+This can be seen in the Code Block \ref{a:make} of the appendix where the Makefile code is provided.
 
 \lstinputlisting[language=C, caption=\centering{MPI code for question 1}, label={q1:mpi}]{../q1/mpi.c}
 \lstinputlisting[language=C, caption=\centering{OpenMP code for question 1}, label={q1:openmp}]{../q1/openmp.c}

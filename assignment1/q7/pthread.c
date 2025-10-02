@@ -19,6 +19,8 @@ void *slave(void *arg) {
   threadsInfo *t = (threadsInfo *)arg;
   int id = t->thread_id;
 
+  // Offset through the array using number of threads to make sure each element
+  // is checked
   for (int i = id; i < ARRAY_SIZE; i += nthreads) {
     if (data[i] < *(t->local_min))
       *(t->local_min) = data[i];
@@ -47,6 +49,7 @@ int main(int argc, char *argv[]) {
   threadsInfo t[nthreads];
 
   for (i = 0; i < nthreads; i++) {
+    // Fill struct for each thread with initial values
     t[i].thread_id = i;
     t[i].local_min = &local_mins[i];
     if (pthread_create(&threads[i], NULL, slave, &t[i]) != 0)
@@ -58,18 +61,12 @@ int main(int argc, char *argv[]) {
       perror("Pthread_join fails");
   }
 
+  // Check the local mins to find the global min
   for (int i = 0; i < nthreads; i++) {
     if (*t[i].local_min < global_min)
       global_min = *t[i].local_min;
   }
 
-  // For verification
-  // int tempMin = data[0];
-  // for (int i = 0; i < ARRAY_SIZE; i++) {
-  //   if (data[i] < tempMin)
-  //     tempMin = data[i];
-  // }
-  // printf("Global min = %d, verify min = %d\n", global_min, tempMin);
   printf("Global min = %d\n", global_min);
 
   return 0;

@@ -23,19 +23,19 @@ plt.axhline(
     y=seq_time_ms,
     color="r",
     linestyle="--",
-    label=f"Baseline (Sequential) ({seq_time_ms:.2f} ms)",
+    label=f"Baseline (Sequential) ({seq_time_ms:.3f} s)",
 )
 
 # Log2 x-scale and labels
 plt.xscale("log", base=2)
 plt.xlabel("Number of Processes")
-plt.ylabel("Time (ms)")
+plt.ylabel("Time (s)")
 plt.title("Local: Static vs Dynamic vs Sequential MPI Performance")
 plt.legend()
 plt.grid(True, which="both", ls="--", lw=0.5)
 
 plt.tight_layout()
 
-plt.savefig("../report/images/q8.png", dpi=300)
+# plt.savefig("../report/images/q8.png", dpi=300)
 
 plt.show()

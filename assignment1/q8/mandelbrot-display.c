@@ -38,8 +38,8 @@ int main() {
   /* Open file containing data */
   FILE *input_file;
 
-  // input_file = fopen("mandelbrot_data_dynamic.txt", "r");
-  input_file = fopen("mandelbrot_data_static.txt", "r");
+  input_file = fopen("mandelbrot_data_dynamic.txt", "r");
+  // input_file = fopen("mandelbrot_data_static.txt", "r");
   if (input_file == NULL) {
     printf("Error opening file \n");
     return -1;

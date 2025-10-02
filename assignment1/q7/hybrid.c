@@ -36,6 +36,7 @@ int main(int argc, char *argv[]) {
 
   double total_time = 0.0;
 
+  // Loop for benchmarking
   for (int run = 0; run < N_RUNS; run++) {
     double tmp = MPI_Wtime();
     double start = MPI_Wtime();
@@ -52,23 +53,18 @@ int main(int argc, char *argv[]) {
 
     int local_min = data[0];
 
+    // use OpenMP directive to find thread local mins
 #pragma omp parallel for reduction(min : local_min)
     for (int i = 0; i < ARRAY_SIZE / size; i++) {
       if (data[i] < local_min)
         local_min = data[i];
     }
 
+    // Reduce the local mins found by each processes
     MPI_Reduce(&local_min, &global_min, 1, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
 
-    if (rank == 0) {
-      // For verification
-      // int tempMin = data[0];
-      // for (int i = 0; i < ARRAY_SIZE; i++) {
-      //   if (data[i] < tempMin)
-      //     tempMin = data[i];
-      // }
-      // printf("Global min = %d, verify min = %d\n", global_min, tempMin);
-    }
+    if (rank == 0)
+      printf("Global min = %d\n", global_min);
 
     free(data);
 

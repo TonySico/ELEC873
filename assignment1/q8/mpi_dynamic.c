@@ -51,33 +51,45 @@ int main(int argc, char *argv[]) {
       int out = 0;
 
       for (reqRank = 1; reqRank < size; reqRank++) {
+        // send initial rows
         MPI_Send(&work_row, 1, MPI_INT, reqRank, WORK, MPI_COMM_WORLD);
+        // Increment work row as well as count number of processes "out" doing
+        // work
         work_row++;
         out++;
       }
 
       do {
+        // recieve new calculated row
         MPI_Recv(tempBuf, Y_RESN, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
                  MPI_COMM_WORLD, &status);
+        // decrement processes out for work
         out--;
 
+        // Copy into the array using the tag sent back by the process to figure
+        // out whcih row it worked on
         memcpy(&k[status.MPI_TAG * Y_RESN], tempBuf, Y_RESN * sizeof(int));
+        // Store the rank that came back to know who to send work to if any is
+        // left
         reqRank = status.MPI_SOURCE;
 
+        // if there is still work left to dom send it out to the process that
+        // just returned
         if (work_row < X_RESN) {
           MPI_Send(&work_row, 1, MPI_INT, reqRank, WORK, MPI_COMM_WORLD);
           out++;
           work_row++;
+        } else {
+          // terminate the processes as they return
+          MPI_Send(&work_row, 1, MPI_INT, reqRank, TERM, MPI_COMM_WORLD);
         }
       } while (status.MPI_TAG < X_RESN && out != 0);
-
-      for (reqRank = 1; reqRank < size; reqRank++) {
-        MPI_Send(&work_row, 1, MPI_INT, reqRank, TERM, MPI_COMM_WORLD);
-      }
     }
 
     if (rank) {
+      // Receive the working row and compute the proper values
       MPI_Recv(&work_row, 1, MPI_INT, 0, WORK, MPI_COMM_WORLD, &status);
+      // Work until terminate tag is sent back
       while (status.MPI_TAG) {
 
         for (i = 0; i < Y_RESN; i++) {
@@ -95,7 +107,9 @@ int main(int argc, char *argv[]) {
           } while (lengthsq < 4.0 && k[i] < 100);
         }
 
+        // Encode the worked on row in the tag and send the correct values back
         MPI_Send(k, Y_RESN, MPI_INT, 0, work_row, MPI_COMM_WORLD);
+        // Recieve the next row to work on or a termination message
         MPI_Recv(&work_row, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD,
                  &status);
       }

@@ -10,6 +10,7 @@ int main(int argc, char *argv[]) {
 
   int sum = 0;
 
+  // leveraging the OpenMP reduction directive
 #pragma omp parallel for reduction(+ : sum)
   for (long i = 0; i < 1000; i++) {
     sum += integers[i];

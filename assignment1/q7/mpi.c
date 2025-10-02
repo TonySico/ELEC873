@@ -36,18 +36,11 @@ int main(int argc, char *argv[]) {
       local_min = data[i];
   }
 
+  // use built in reduction to find global min from local mins
   MPI_Reduce(&local_min, &global_min, 1, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
 
-  if (rank == 0) {
-    // For verification
-    // int tempMin = data[0];
-    // for (int i = 0; i < ARRAY_SIZE; i++) {
-    //   if (data[i] < tempMin)
-    //     tempMin = data[i];
-    // }
-    // printf("Global min = %d, verify min = %d\n", global_min, tempMin);
+  if (rank == 0)
     printf("Global min = %d\n", global_min);
-  }
 
   free(data);
 

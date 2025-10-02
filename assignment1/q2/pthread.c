@@ -18,6 +18,8 @@ void *slave(void *arg) {
   int myid = (int)(intptr_t)arg;
   double local_sum = 0.0, x;
 
+  // calculate offset based on id and nthreads to ensure no one sums the same
+  // number
   for (int i = myid; i < num_steps; i += nthreads) {
     x = (i + 0.5) * step;
     local_sum += 4.0 / (1.0 + x * x);

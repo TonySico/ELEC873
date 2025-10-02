@@ -39,9 +39,12 @@ int main(int argc, char *argv[]) {
       int rowCount;
 
       for (int sendRank = 1; sendRank < size; sendRank++) {
+        // Calculate whether this rank will have to do 1 extra or not (depending
+        // on whether they divide evenly)
         int offset = (sendRank <= (X_RESN % (size - 1))) ? 1 : 0;
         rowCount = (X_RESN / (size - 1)) + offset;
 
+        // Send the start row
         MPI_Send(&startRow, 1, MPI_INT, sendRank, rowCount, MPI_COMM_WORLD);
 
         count++;
@@ -52,13 +55,21 @@ int main(int argc, char *argv[]) {
         int elemCount = (X_RESN / (size - 1)) + 1;
         int bufferSize = elemCount * Y_RESN * sizeof(int);
 
+        // Allocate the largest possible buffer
         int *tempBuf = malloc(bufferSize);
 
+        // Recieve all the data
         MPI_Recv(tempBuf, elemCount * Y_RESN, MPI_INT, MPI_ANY_SOURCE,
                  MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
+        // calculate offset to determine whether the source rank had more or
+        // less rows
         int offset = (status.MPI_SOURCE <= (X_RESN % (size - 1))) ? 0 : 1;
 
+        // The tag recieved contains the position in the array where data should
+        // be stored. The data is then copied into the final array, and the
+        // offset determines whether every element of the recieved buffer are
+        // relevant, or if the buffer is one smaller than the size of the array.
         memcpy(&k[status.MPI_TAG * Y_RESN], tempBuf,
                (elemCount - offset) * Y_RESN * sizeof(int));
         free(tempBuf);
@@ -67,6 +78,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (rank) {
+      // Recieve start row, and compute everything locally
       MPI_Recv(&startRow, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
       int rowCount = status.MPI_TAG;
@@ -89,6 +101,7 @@ int main(int argc, char *argv[]) {
             k[i * Y_RESN + j]++;
           } while (lengthsq < 4.0 && k[i * Y_RESN + j] < 100);
         }
+      // Send final data as well as start row encoded as the tag
       MPI_Send(k, rowCount * Y_RESN, MPI_INT, 0, startRow, MPI_COMM_WORLD);
       free(k);
     }

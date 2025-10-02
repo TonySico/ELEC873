@@ -39,23 +39,30 @@ int main(int argc, char *argv[]) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   MPI_Status status;
+  // Determine the depth in the binary tree each process has
   int myDepth = depth(rank, size);
+  // Determine the largest depth possible given splits of 2
   int maxDepth = ((int)ceil(log((double)size) / log((double)2)));
+  // Calculate how many elements a process should have at their depth
   int elemCount = ARRAYSIZE / (pow(2, myDepth));
   int bufferSize = elemCount * sizeof(int);
+  // allocate this data buffer for each process
   data = malloc(bufferSize);
+  // init counter value
   count = myDepth;
 
+  // Fill test and regular array
   int testData[1000];
-
   if (!rank) {
     for (int i = 0; i < ARRAYSIZE; i++) {
       data[i] = i;
       testData[i] = i;
     }
+    // get rank 0s first destination
     dest = size / 2;
   }
 
+  // wait until data is recieved
   if (rank) {
     MPI_Recv(data, elemCount, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
              MPI_COMM_WORLD, &status);
@@ -64,23 +71,32 @@ int main(int argc, char *argv[]) {
     dest = rank + ((rank - status.MPI_SOURCE) / 2);
   }
 
+  // if a processes count is less than the max depth, it hasn't sent all the
+  // data it needs to yet
   while (count < maxDepth) {
+    // send the right half of the array
     elemCount /= 2;
     MPI_Send(&data[elemCount], elemCount, MPI_INT, dest, 0, MPI_COMM_WORLD);
+    // equation to figure out next rank to send to
     dest = rank + ((dest - rank) / 2);
+    // resize current array to only have data you are supposed to do
     data = realloc(data, elemCount * sizeof(int));
     count++;
   }
 
+  // Calculate local totals
   total = add(data, elemCount);
 
   while (count > myDepth) {
+    // recieve totals from children processes
     MPI_Recv(&tempInt, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD,
              &status);
     total += tempInt;
     count--;
   }
 
+  // once you break out from the loop above, it means you are now a child to
+  // someone else and must send your data up the tree
   if (rank) {
     MPI_Send(&total, 1, MPI_INT, returnSource, 0, MPI_COMM_WORLD);
   }

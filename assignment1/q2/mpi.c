@@ -21,6 +21,8 @@ int main(int argc, char *argv[]) {
   double local_sum;
   int i;
 
+  // calculate offset based on rank and size to ensure no one sums the same
+  // number
   for (i = rank; i < num_steps; i += size) {
     x = (i + 0.5) * step;
     local_sum += 4.0 / (1.0 + x * x);

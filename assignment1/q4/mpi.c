@@ -24,9 +24,10 @@ int main(int argc, char *argv[]) {
     printf("Process %d recieved the data %d from process %d\n", rank, recData,
            status.MPI_SOURCE);
 
+    // Have last rank always send back to rank 0
     if (rank == size - 1)
       MPI_Send(&rank, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-    else
+    else // Allow variable number of ranks to be used by using rank var
       MPI_Send(&rank, 1, MPI_INT, rank + 1, 0, MPI_COMM_WORLD);
   }
 
