@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Load CSVs
+# static = pd.read_csv("knlstatic.csv", header=None, names=["processes", "time"])
+# dynamic = pd.read_csv("knldynamic.csv", header=None, names=["processes", "time"])
+# seq = pd.read_csv("knlseq.csv", header=None, names=["processes", "time"])
 static = pd.read_csv("static.csv", header=None, names=["processes", "time"])
 dynamic = pd.read_csv("dynamic.csv", header=None, names=["processes", "time"])
 seq = pd.read_csv("seq.csv", header=None, names=["processes", "time"])
@@ -36,6 +39,6 @@ plt.grid(True, which="both", ls="--", lw=0.5)
 
 plt.tight_layout()
 
-# plt.savefig("../report/images/q8.png", dpi=300)
+plt.savefig("../report/images/q8.png", dpi=300)
 
 plt.show()
