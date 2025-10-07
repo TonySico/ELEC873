@@ -17,7 +17,7 @@ $(MPI_EXE): $(MPI_SRC)
 runall: runm 
 
 runm:
-	mpirun --oversubscribe -np 2 ./$(MPI_EXE) 2>&1 | tee mpi.log
+	mpirun --oversubscribe -np 2 ./$(MPI_EXE) 2 2>&1 | tee mpi.log
 
 clean:
 	rm -f $(MPI_EXE) *.log

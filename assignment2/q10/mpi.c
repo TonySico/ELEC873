@@ -4,14 +4,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N_RUNS 1 // TODO: Change this back to 100
+#define N_RUNS 1000
 
 int main(int argc, char *argv[]) {
   int rank, size;
   MPI_Status status;
   int DATA_COUNT;
-  double total_time_init = 0.0;
-  double total_time_no_init = 0.0;
+  double total_time = 0.0;
+
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   // Allow user to specify data coutn (for use in performance testing script)
   if (argc < 2) {
@@ -24,41 +27,29 @@ int main(int argc, char *argv[]) {
 
   DATA_COUNT = atoi(argv[1]);
 
-  double offset = MPI_Wtime();
-  double start_init = MPI_Wtime();
+  char *data;
 
-  MPI_Init(&argc, &argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-  double start_no_init = MPI_Wtime();
-
-  int *data;
-
-  data = malloc(DATA_COUNT * sizeof(int));
+  data = malloc(DATA_COUNT * sizeof(char));
 
   if (!rank) {
     for (int i = 0; i < DATA_COUNT; i++) {
-      data[i] = i;
+      data[i] = (char)i;
     }
-    MPI_Bcast(&data, DATA_COUNT, MPI_INT, 0, MPI_COMM_WORLD);
   }
 
-  double end_no_init = MPI_Wtime();
+  for (int run = 0; run < N_RUNS; run++) {
+    double offset = MPI_Wtime();
+    double start = MPI_Wtime();
 
-  if (MPI_Finalize() != MPI_SUCCESS)
-    return 1;
+    MPI_Bcast(data, DATA_COUNT, MPI_CHAR, 0, MPI_COMM_WORLD);
 
-  double end_init = MPI_Wtime();
+    double end = MPI_Wtime();
 
-  double timer_overhead_init = start_init - (2 * offset);
-  double timer_overhead_no_init = start_init - offset;
+    double timer_overhead = start - offset;
+    total_time += (end - start - timer_overhead);
+  }
 
-  total_time_init += (end_init - start_init - timer_overhead_init);
-  total_time_no_init += (end_no_init - start_no_init - timer_overhead_no_init);
-
-  double avg_time_init = total_time_init / N_RUNS;
-  double avg_time_no_init = total_time_no_init / N_RUNS;
+  double avg_time = total_time / N_RUNS;
 
   if (!rank) {
     FILE *f = fopen("results.csv", "a");
@@ -66,15 +57,15 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "Error opening results.csv\n");
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
-    fprintf(f, "%d,%d,%.6f,%.6f\n", size, DATA_COUNT, avg_time_init,
-            avg_time_no_init);
+    fprintf(f, "%d,%d,%.9f\n", size, DATA_COUNT, avg_time);
     fclose(f);
 
-    printf(
-        "Processes=%d Arraysize=%d AvgTimeInit=%.6f AvgTimeNoInit=%.6f sec\n",
-        size, DATA_COUNT, avg_time_init, avg_time_no_init);
+    printf("Processes=%d Arraysize=%d AvgTime=%.9f sec\n", size, DATA_COUNT,
+           avg_time);
     // printf("sizeof(int) %lu\n", sizeof(int));
   }
+
+  MPI_Finalize();
 
   return 0;
 }
