@@ -12,7 +12,7 @@ MPI_SRC     = mpi.c
 build: $(MPI_EXE) 
 
 $(MPI_EXE): $(MPI_SRC)
-	$(MPICC) -o $@ $<
+	$(MPICC) -o $@ $< -lm
 
 runall: runm 
 
