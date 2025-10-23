@@ -18,7 +18,6 @@ int rank;
 
 float epsilon(double new, double old) {
   float e = fabs((new - old) / old * 100.0f);
-  printf("rank %d epsilon = %.8f\n", rank, e);
   return (e);
 }
 
