@@ -13,6 +13,7 @@
 #include <math.h>
 #include <mpi.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 int rank;
 
@@ -27,6 +28,37 @@ double get_time() {
   return ts.tv_sec + ts.tv_nsec * 1e-9;
 }
 
+void warmup() {
+  int rank, size;
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  char *buffer = calloc(8192, 1);
+
+  if (!rank) {
+    for (int i = 0; i < 512; i++) {
+      MPI_Send(buffer, 8192, MPI_BYTE, 1, 0, MPI_COMM_WORLD);
+    }
+
+    for (int i = 0; i < 512; i++) {
+      MPI_Recv(buffer, 8192, MPI_BYTE, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+  } else {
+    for (int i = 0; i < 512; i++) {
+      MPI_Recv(buffer, 8192, MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+
+    for (int i = 0; i < 512; i++) {
+      MPI_Send(buffer, 8192, MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+    }
+  }
+
+  printf("Rank %d has warmed up!\n", rank);
+
+  return;
+}
+
 int main(int argc, char *argv[]) {
   int size, n_runs = 10;
   MPI_Status status;
@@ -35,6 +67,8 @@ int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  warmup();
 
   int DATA_COUNT = 0;
   char data = '1';
@@ -93,7 +127,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (!rank) {
-    printf("gap = %.6f", gapzero);
+    printf("gap = %.6f, determined after %d runs", gapzero, n_runs);
   }
 
   MPI_Finalize();
