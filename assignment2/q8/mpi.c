@@ -22,10 +22,10 @@ float epsilon(double new, double old) {
   return (e);
 }
 
-double get_time() {
+unsigned long long get_time() {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  return ts.tv_sec + ts.tv_nsec * 1e-9;
+  return ts.tv_sec * (unsigned long long)1e9 + ts.tv_nsec;
 }
 
 int main(int argc, char *argv[]) {
@@ -40,17 +40,32 @@ int main(int argc, char *argv[]) {
   int DATA_COUNT = 0;
   char data = '1';
 
-  float g[2] = {10.0, 1.0};
+  unsigned long long g[2] = {10.0, 1.0};
 
-  double offset = get_time();
-  double g_start = get_time();
-  double timer_overhead = g_start - offset;
-  double g_end, rtt_start, rtt_end;
+  unsigned long long offset = get_time();
+  unsigned long long g_rttn_start = get_time();
+  unsigned long long timer_overhead = g_rttn_start - offset;
+  unsigned long long g_end, rtt_end, rtt1;
 
-  int WORK = 1, TAG = WORK, STOP = 0;
+  if (!rank) {
+    g_rttn_start = get_time();
+    MPI_Send(&data, DATA_COUNT, MPI_CHAR, 1, 0, MPI_COMM_WORLD);
+    MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 1, 0, MPI_COMM_WORLD, &status);
+    rtt_end = get_time();
+    rtt1 = rtt_end - g_rttn_start - timer_overhead;
+    printf("RTT_1 = %llu (ns)\n", rtt1);
+  }
+
+  if (rank) {
+    MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Send(&data, DATA_COUNT, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+  }
+
+  int WORK = 1, STOP = 0;
+  int flag = WORK;
 
   // Loop for benchmarking
-  while (epsilon(g[1], g[0]) > 1 && TAG) {
+  while (epsilon(g[1], g[0]) > 1 && flag) {
 
     // Set prev g value to current for new calculation
     if (!rank) {
@@ -58,23 +73,28 @@ int main(int argc, char *argv[]) {
     }
 
     int i = 0;
-    while (i < n_runs && TAG) {
+    while (i < n_runs && flag) {
       if (!rank) {
-        g_start = get_time();
+        g_rttn_start = get_time();
         MPI_Send(&data, DATA_COUNT, MPI_CHAR, 1, WORK, MPI_COMM_WORLD);
       }
 
       if (rank) {
         MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 0, MPI_ANY_TAG, MPI_COMM_WORLD,
                  &status);
-        TAG = status.MPI_TAG;
+        flag = status.MPI_TAG;
       }
       i++;
     }
 
     if (!rank) {
       g_end = get_time();
-      g[1] = (g_end - g_start - timer_overhead) / n_runs;
+      printf("g_end = %llu, g_start = %llu, timer_overhead = %llu, total time "
+             "= %llu\n",
+             g_end, g_rttn_start, timer_overhead, g_end - g_rttn_start);
+      g[1] =
+          (g_end - g_rttn_start - timer_overhead) / (unsigned long long)n_runs;
+      printf("Gap_0 = %llu\n", g[1]);
       MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 1, MPI_ANY_TAG, MPI_COMM_WORLD,
                &status);
     }
@@ -84,9 +104,13 @@ int main(int argc, char *argv[]) {
     }
 
     n_runs *= 2;
+    if (n_runs > pow(2, 20)) {
+      printf("error, n_runs was too high\n");
+      break;
+    }
   }
 
-  double gapzero = g[1] * 1e9;
+  double gapzero = g[1];
 
   // Tells the mirror to stop waiting on a recv
   if (!rank) {
@@ -94,7 +118,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (!rank) {
-    printf("gap = %.6f, determined after %d runs", gapzero, n_runs);
+    printf("gap = %.8f, determined after %d runs", gapzero, n_runs);
   }
 
   MPI_Finalize();
