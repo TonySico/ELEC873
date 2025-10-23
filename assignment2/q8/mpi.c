@@ -13,13 +13,19 @@
 #include <math.h>
 #include <mpi.h>
 #include <stdio.h>
+#include <time.h>
 int rank;
 
 float epsilon(double new, double old) {
-  float e = ceil(fabs((new - old) / old * 100.0f));
-  if (!rank)
-    printf("%.8f e \n", e);
+  float e = fabs((new - old) / old * 100.0f);
+  printf("rank %d epsilon = %.8f\n", rank, e);
   return (e);
+}
+
+double get_time() {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return ts.tv_sec + ts.tv_nsec * 1e-9;
 }
 
 int main(int argc, char *argv[]) {
@@ -36,15 +42,15 @@ int main(int argc, char *argv[]) {
 
   float g[2] = {10.0, 1.0};
 
-  double offset = MPI_Wtime();
-  double g_start = MPI_Wtime();
+  double offset = get_time();
+  double g_start = get_time();
   double timer_overhead = g_start - offset;
   double g_end, rtt_start, rtt_end;
 
   int WORK = 1, TAG = WORK, STOP = 0;
 
   // Loop for benchmarking
-  while (epsilon(g[0], g[1]) > 1 && TAG) {
+  while (epsilon(g[1], g[0]) > 1 && TAG) {
 
     // Set prev g value to current for new calculation
     if (!rank) {
@@ -54,7 +60,7 @@ int main(int argc, char *argv[]) {
     int i = 0;
     while (i < n_runs && TAG) {
       if (!rank) {
-        g_start = MPI_Wtime();
+        g_start = get_time();
         MPI_Send(&data, DATA_COUNT, MPI_CHAR, 1, WORK, MPI_COMM_WORLD);
       }
 
@@ -67,11 +73,8 @@ int main(int argc, char *argv[]) {
     }
 
     if (!rank) {
-      g_end = MPI_Wtime();
+      g_end = get_time();
       g[1] = (g_end - g_start - timer_overhead) / n_runs;
-      printf("rank 0 waiting and gap = %.30f g_end = %.8f g_start = %.8f "
-             "timer_overhead = %.20f\n",
-             g[1], g_end, g_start, timer_overhead);
       MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 1, MPI_ANY_TAG, MPI_COMM_WORLD,
                &status);
     }
@@ -83,13 +86,15 @@ int main(int argc, char *argv[]) {
     n_runs *= 2;
   }
 
+  double gapzero = g[1] * 1e9;
+
   // Tells the mirror to stop waiting on a recv
   if (!rank) {
     MPI_Send(&data, DATA_COUNT, MPI_CHAR, 1, STOP, MPI_COMM_WORLD);
   }
 
   if (!rank) {
-    printf("gap = %.2f", g[1]);
+    printf("gap = %.6f", gapzero);
   }
 
   MPI_Finalize();
