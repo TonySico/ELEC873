@@ -47,6 +47,7 @@ int main(int argc, char *argv[]) {
   unsigned long long timer_overhead = g_rttn_start - offset;
   unsigned long long g_end, rtt_end, rtt1;
 
+  // start of rtt1 calc for use in calculating g(0)
   if (!rank) {
     g_rttn_start = get_time();
     MPI_Send(&data, DATA_COUNT, MPI_CHAR, 1, 0, MPI_COMM_WORLD);
@@ -60,6 +61,7 @@ int main(int argc, char *argv[]) {
     MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &status);
     MPI_Send(&data, DATA_COUNT, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
   }
+  // end rtt1 calc
 
   int WORK = 1, STOP = 0;
   int flag = WORK;
@@ -72,10 +74,12 @@ int main(int argc, char *argv[]) {
       g[0] = g[1];
     }
 
-    int i = 0;
-    while (i < n_runs && flag) {
+    if (!rank) {
+      g_rttn_start = get_time();
+    }
+
+    for (int i = 0; i < n_runs; i++) {
       if (!rank) {
-        g_rttn_start = get_time();
         MPI_Send(&data, DATA_COUNT, MPI_CHAR, 1, WORK, MPI_COMM_WORLD);
       }
 
@@ -83,8 +87,9 @@ int main(int argc, char *argv[]) {
         MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 0, MPI_ANY_TAG, MPI_COMM_WORLD,
                  &status);
         flag = status.MPI_TAG;
+        if (!flag)
+          break;
       }
-      i++;
     }
 
     if (!rank) {
