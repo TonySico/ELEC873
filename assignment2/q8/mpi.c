@@ -90,10 +90,9 @@ int main(int argc, char *argv[]) {
     if (!rank) {
       g_end = get_time();
       printf("g_end = %llu, g_start = %llu, timer_overhead = %llu, total time "
-             "- offset "
-             "= %llu\n",
+             "- offset = %llu, n_run = %d\n",
              g_end, g_rttn_start, timer_overhead,
-             g_end - g_rttn_start - timer_overhead);
+             g_end - g_rttn_start - timer_overhead, n_runs);
       g[1] =
           (g_end - g_rttn_start - timer_overhead) / (unsigned long long)n_runs;
       printf("Gap_0 = %llu\n", g[1]);
