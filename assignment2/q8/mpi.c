@@ -67,7 +67,8 @@ int main(int argc, char *argv[]) {
   int flag = WORK;
 
   // Loop for benchmarking
-  while (epsilon(g[1], g[0]) > 1 && flag && rtt1 < epsilon(g[1], g[0]) * rttn) {
+  while (epsilon(g[1], g[0]) > 1 && flag &&
+         rtt1 < (epsilon(g[1], g[0]) * rttn)) {
 
     // Set prev g value to current for new calculation
     if (!rank) {
@@ -86,20 +87,24 @@ int main(int argc, char *argv[]) {
       if (rank) {
         MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 0, MPI_ANY_TAG, MPI_COMM_WORLD,
                  &status);
-        if (!status.MPI_TAG)
+        flag = status.MPI_TAG;
+        if (!flag)
           break;
       }
     }
 
     if (!rank) {
       g_end = get_time();
-      g[1] =
-          (g_end - g_rttn_start - timer_overhead) / (unsigned long long)n_runs;
-      printf("Gap_0 = %llu\n", g[1]);
+
       MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 1, MPI_ANY_TAG, MPI_COMM_WORLD,
                &status);
       rtt_end = get_time();
+
+      g[1] =
+          (g_end - g_rttn_start - timer_overhead) / (unsigned long long)n_runs;
       rttn = (rtt_end - g_rttn_start - timer_overhead);
+      printf("gap_0_new = %llu, gap_0_old = %llu, rtt1 = %llu, rttn = %f, \n",
+             g[1], g[0], rtt1, epsilon(g[1], g[0]) * rttn);
     }
 
     if (rank) {
