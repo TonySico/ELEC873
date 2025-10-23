@@ -6,7 +6,7 @@ EXEC=./mpi
 
 DATA_SIZES=(4 32 256 2048 16384 131072 1048576)
 
-rm results.csv
+rm 8.csv
 trap "echo 'Interrupted! Exiting.'; exit 1" SIGINT
 
 for size in "${DATA_SIZES[@]}"; do
