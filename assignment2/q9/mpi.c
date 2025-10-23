@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  // Allow user to specify data coutn (for use in performance testing script)
+  // Allow user to specify data count (for use in performance testing script)
   if (argc < 2) {
     if (rank == 0) {
       fprintf(stderr, "Usage: %s <array_size>\n", argv[0]);
