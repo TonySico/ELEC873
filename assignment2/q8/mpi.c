@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
   unsigned long long offset = get_time();
   unsigned long long g_rttn_start = get_time();
   unsigned long long timer_overhead = g_rttn_start - offset;
-  unsigned long long g_end, rtt_end, rtt1;
+  unsigned long long g_end, rtt_end, rtt1, rttn;
 
   // start of rtt1 calc for use in calculating g(0)
   if (!rank) {
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
   int flag = WORK;
 
   // Loop for benchmarking
-  while (epsilon(g[1], g[0]) > 1 && flag) {
+  while (epsilon(g[1], g[0]) > 1 && flag && rtt1 < epsilon(g[1], g[0]) * rttn) {
 
     // Set prev g value to current for new calculation
     if (!rank) {
@@ -86,23 +86,20 @@ int main(int argc, char *argv[]) {
       if (rank) {
         MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 0, MPI_ANY_TAG, MPI_COMM_WORLD,
                  &status);
-        flag = status.MPI_TAG;
-        if (!flag)
+        if (!status.MPI_TAG)
           break;
       }
     }
 
     if (!rank) {
       g_end = get_time();
-      printf("g_end = %llu, g_start = %llu, timer_overhead = %llu, total time "
-             "- offset = %llu, n_run = %d\n",
-             g_end, g_rttn_start, timer_overhead,
-             g_end - g_rttn_start - timer_overhead, n_runs);
       g[1] =
           (g_end - g_rttn_start - timer_overhead) / (unsigned long long)n_runs;
       printf("Gap_0 = %llu\n", g[1]);
       MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 1, MPI_ANY_TAG, MPI_COMM_WORLD,
                &status);
+      rtt_end = get_time();
+      rttn = (rtt_end - g_rttn_start - timer_overhead);
     }
 
     if (rank) {
@@ -124,7 +121,8 @@ int main(int argc, char *argv[]) {
   }
 
   if (!rank) {
-    printf("gap = %.8f, determined after %d runs", gapzero, n_runs);
+    printf("rtt1 = %.8f, g0 = %.8f, rttn = %.8f, determined after %d runs\n",
+           (double)rtt1, gapzero, (double)rttn, n_runs);
   }
 
   MPI_Finalize();
