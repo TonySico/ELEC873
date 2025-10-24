@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
   unsigned long long offset = get_time();
   unsigned long long g_rttn_start = get_time();
   unsigned long long timer_overhead = g_rttn_start - offset;
-  unsigned long long g_end, rtt_end, rtt1, rttn;
+  unsigned long long g_end, rtt_end, rtt1 = 1000000, rttn = 1;
 
   // start of rtt1 calc for use in calculating g(0)
   if (!rank) {
@@ -67,8 +67,9 @@ int main(int argc, char *argv[]) {
   int flag = WORK;
 
   // Loop for benchmarking
-  while (epsilon(g[1], g[0]) > 1 && flag &&
-         rtt1 < (epsilon(g[1], g[0]) * rttn)) {
+
+  // printf("rtt1 = %llu, rttn = %llu\n", rtt1, rttn);
+  while (epsilon(g[1], g[0]) > 1 && flag && rtt1 > (0.01 * rttn)) {
 
     // Set prev g value to current for new calculation
     if (!rank) {
