@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
   unsigned long long offset = get_time();
   unsigned long long g_rttn_start = get_time();
   unsigned long long timer_overhead = g_rttn_start - offset;
-  unsigned long long g_end, rtt_end, rtt1 = 1000000, rttn = 1;
+  unsigned long long g_end, rtt_end, rtt1_total = 0, rtt1 = 100, rttn = 0;
 
   // run the 0 message size ping pong 1000 times to stabalize rtt1 value
   for (int i = 0; i < rtt1_runs; i++) {
@@ -55,8 +55,8 @@ int main(int argc, char *argv[]) {
       MPI_Send(&data, DATA_COUNT, MPI_CHAR, 1, 0, MPI_COMM_WORLD);
       MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 1, 0, MPI_COMM_WORLD, &status);
       rtt_end = get_time();
-      rtt1 += (rtt_end - g_rttn_start - timer_overhead);
-      printf("RTT_1 = %llu (ns)\n", rtt1);
+      rtt1 = rtt_end - g_rttn_start - timer_overhead;
+      rtt1_total += rtt1;
     }
 
     if (rank) {
@@ -64,7 +64,10 @@ int main(int argc, char *argv[]) {
       MPI_Send(&data, DATA_COUNT, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
     }
   }
-  rtt1 /= rtt1_runs;
+
+  if (!rank) {
+    rtt1 = rtt1_total / rtt1_runs;
+  }
   // end rtt1 calc
 
   // Tags for send and recieve
