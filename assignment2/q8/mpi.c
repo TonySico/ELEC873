@@ -104,8 +104,10 @@ int main(int argc, char *argv[]) {
       g[1] =
           (g_end - g_rttn_start - timer_overhead) / (unsigned long long)n_runs;
       rttn = (rtt_end - g_rttn_start - timer_overhead);
-      printf("gap_0_new = %llu, gap_0_old = %llu, rtt1 = %llu, rttn = %f, \n",
-             g[1], g[0], rtt1, epsilon(g[1], g[0]) * rttn);
+      // debug
+      // printf("gap_0_new = %llu, gap_0_old = %llu, rtt1 = %llu, rttn = %f,
+      // \n",
+      //        g[1], g[0], rtt1, epsilon(g[1], g[0]) * rttn);
     }
 
     if (rank) {
