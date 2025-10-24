@@ -67,7 +67,8 @@ int main(int argc, char *argv[]) {
   int flag = WORK;
 
   // Loop for benchmarking
-  while (epsilon(g[1], g[0]) > 1 && flag && rtt1 < (0.1 * rttn)) {
+  while (epsilon(g[1], g[0]) > 1 && flag &&
+         rtt1 < (epsilon(g[1], g[0]) * rttn)) {
 
     // Set prev g value to current for new calculation
     if (!rank) {
