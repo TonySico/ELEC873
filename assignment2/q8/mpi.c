@@ -7,8 +7,16 @@
 #include <time.h>
 
 int rank;
+unsigned long long timer_overhead;
+
+#define ZERO_DATA_COUNT 0
+#define RANK_ZERO 0
+#define RANK_ONE 1
+#define WORK 1
+#define STOP 0
 
 #define RTT1_AVG 1024
+#define AVG_RUNS 1024
 
 float epsilon(double new, double old) {
   float e = fabs((new - old) / old * 100.0f);
@@ -24,20 +32,62 @@ typedef struct {
 
 } result;
 
-void getTimes(result *r) {
-  unsigned long long g_rtt_start;
-  unsigned long long g_end;
-  unsigned long long rtt_end;
-  unsigned long long o_r_start;
-  unsigned long long o_s_start;
-  unsigned long long o_r_end;
-  unsigned long long o_s_end;
-}
-
 unsigned long long get_time() {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return ts.tv_sec * (unsigned long long)1e9 + ts.tv_nsec;
+}
+
+void getTimes(result *R) {
+  unsigned long long g_rtt_start, g_end, g_temp = 0, rtt_end, rtt_temp = 0,
+                                         o_r_start, o_s_temp = 0, o_r_end,
+                                         o_s_end, o_r_temp = 0;
+
+  char *data;
+  data = malloc(R->m);
+  if (!rank) {
+    for (int i; i < R->m; i++) {
+      data[i] = 'a';
+    }
+  }
+
+  MPI_Status status;
+
+  for (int i; i < AVG_RUNS; i++) {
+    if (!rank) {
+
+      g_rtt_start = get_time();
+      MPI_Send(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK,
+               MPI_COMM_WORLD);
+
+      o_s_end = get_time();
+      g_end = get_time();
+
+      o_s_temp += o_s_end - g_rtt_start - timer_overhead;
+      g_temp += g_end - g_rtt_start - 2 * timer_overhead;
+
+      MPI_Recv(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD,
+               &status);
+
+      rtt_end = get_time();
+
+      rtt_temp += rtt_end - g_rtt_start - timer_overhead;
+    }
+
+    if (rank) {
+      MPI_Recv(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, WORK,
+               MPI_COMM_WORLD, &status);
+      MPI_Send(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, WORK,
+               MPI_COMM_WORLD);
+    }
+  }
+
+  R->g_m = g_temp / AVG_RUNS;
+  R->rtt_m = rtt_temp / AVG_RUNS;
+  R->o_s = o_s_temp / AVG_RUNS;
+  R->o_r = o_r_temp / AVG_RUNS;
+
+  free(data);
 }
 
 int main(int argc, char *argv[]) {
@@ -49,14 +99,14 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  int DATA_COUNT = 0;
   char data = '1';
 
   unsigned long long g[2] = {10.0, 1.0};
+  int flag = WORK;
 
   unsigned long long offset = get_time();
   unsigned long long g_rttn_start = get_time();
-  unsigned long long timer_overhead = g_rttn_start - offset;
+  timer_overhead = g_rttn_start - offset;
   unsigned long long g_end, rtt_end, rtt1_total = 0, rtt_1 = 100, rttn = 0;
 
   // run the 0 message size ping pong 1000 times to stabalize rtt1 value
@@ -64,16 +114,20 @@ int main(int argc, char *argv[]) {
     // start of rtt1 calc for use in calculating g(0)
     if (!rank) {
       g_rttn_start = get_time();
-      MPI_Send(&data, DATA_COUNT, MPI_CHAR, 1, 0, MPI_COMM_WORLD);
-      MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 1, 0, MPI_COMM_WORLD, &status);
+      MPI_Send(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK,
+               MPI_COMM_WORLD);
+      MPI_Recv(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD,
+               &status);
       rtt_end = get_time();
       rtt_1 = rtt_end - g_rttn_start - timer_overhead;
       rtt1_total += rtt_1;
     }
 
     if (rank) {
-      MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &status);
-      MPI_Send(&data, DATA_COUNT, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+      MPI_Recv(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, WORK,
+               MPI_COMM_WORLD, &status);
+      MPI_Send(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, WORK,
+               MPI_COMM_WORLD);
     }
   }
 
@@ -83,8 +137,6 @@ int main(int argc, char *argv[]) {
   // end rtt1 calc
 
   // Tags for send and recieve
-  int WORK = 1, STOP = 0;
-  int flag = WORK;
 
   // Loop for calculating g0 and RTTn
   while (epsilon(g[1], g[0]) > 1 && flag && rtt_1 > (0.01 * rttn)) {
@@ -97,12 +149,13 @@ int main(int argc, char *argv[]) {
 
     for (int i = 0; i < n_runs && flag; i++) {
       if (!rank) {
-        MPI_Send(&data, DATA_COUNT, MPI_CHAR, 1, WORK, MPI_COMM_WORLD);
+        MPI_Send(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK,
+                 MPI_COMM_WORLD);
       }
 
       if (rank) {
-        MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 0, MPI_ANY_TAG, MPI_COMM_WORLD,
-                 &status);
+        MPI_Recv(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, MPI_ANY_TAG,
+                 MPI_COMM_WORLD, &status);
         flag = status.MPI_TAG;
       }
     }
@@ -110,16 +163,17 @@ int main(int argc, char *argv[]) {
     if (!rank) {
       g_end = get_time();
 
-      MPI_Recv(&data, DATA_COUNT, MPI_CHAR, 1, MPI_ANY_TAG, MPI_COMM_WORLD,
-               &status);
+      MPI_Recv(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, MPI_ANY_TAG,
+               MPI_COMM_WORLD, &status);
       rtt_end = get_time();
 
       g[1] = (g_end - g_rttn_start - timer_overhead) / n_runs;
-      rttn = (rtt_end - g_rttn_start - timer_overhead);
+      rttn = (rtt_end - g_rttn_start - 2 * timer_overhead);
     }
 
     if (rank) {
-      MPI_Send(&data, DATA_COUNT, MPI_CHAR, 0, WORK, MPI_COMM_WORLD);
+      MPI_Send(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, WORK,
+               MPI_COMM_WORLD);
     }
 
     n_runs *= 2;
@@ -135,13 +189,14 @@ int main(int argc, char *argv[]) {
 
   // Tells the mirror to stop waiting on a recv
   if (!rank) {
-    MPI_Send(&data, DATA_COUNT, MPI_CHAR, 1, STOP, MPI_COMM_WORLD);
+    MPI_Send(&data, ZERO_DATA_COUNT, MPI_CHAR, 1, STOP, MPI_COMM_WORLD);
   }
 
   // debug
 
   // if (!rank) {
-  //   printf("rtt_1 = %.8f, g0 = %.8f, rttn = %.8f, L = %f \n", (double)rtt_1,
+  //   printf("rtt_1 = %.8f, g0 = %.8f, rttn = %.8f, L = %f \n",
+  //   (double)rtt_1,
   //          g_0, (double)rttn, L);
   // }
 
