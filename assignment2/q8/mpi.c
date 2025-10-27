@@ -15,6 +15,25 @@ float epsilon(double new, double old) {
   return (e);
 }
 
+typedef struct {
+  int m;
+  unsigned long long g_m;
+  unsigned long long o_r;
+  unsigned long long o_s;
+  unsigned long long rtt_m;
+
+} result;
+
+void getTimes(result *r) {
+  unsigned long long g_rtt_start;
+  unsigned long long g_end;
+  unsigned long long rtt_end;
+  unsigned long long o_r_start;
+  unsigned long long o_s_start;
+  unsigned long long o_r_end;
+  unsigned long long o_s_end;
+}
+
 unsigned long long get_time() {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -127,9 +146,6 @@ int main(int argc, char *argv[]) {
   // }
 
   // end of g0 and rttn calculation
-  //
-  //
-  //
   //
   //
   // Start of part 2, calculating Os(m), Or(m), L, g(m) and RTT(m)
