@@ -4,6 +4,7 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 int rank;
@@ -12,9 +13,12 @@ unsigned long long timer_overhead;
 #define ZERO_DATA_COUNT 0
 #define RANK_ZERO 0
 #define RANK_ONE 1
-#define WORK 1
+
 #define STOP 0
-#define SYNCH 2
+#define WORK 1
+#define SYNC 2
+#define READY 3
+
 #define K_M 18
 #define m(x) (1ULL << x)
 
@@ -46,9 +50,7 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
       rtt_temp = 0, o_r_start, o_s_temp = 0, o_r_end, o_s_end, o_r_temp = 0;
 
   char *data = malloc(R->m);
-  for (int i; i < R->m; i++) {
-    data[i] = 'a';
-  }
+  memset(data, 'a', R->m);
 
   MPI_Status status;
   struct timespec rttm;
@@ -63,13 +65,13 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
       r[0] = r[1];
     }
 
-    for (int i = 0; i < nruns; i++) {
+    for (int i = 0; i < nruns && flag; i++) {
       if (!rank) {
-        MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, SYNCH,
+        MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, SYNC,
                  MPI_COMM_WORLD, &status); // Synch
 
         oS_rtt_start = get_time();
-        MPI_Send(data, R->m, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD);
+        MPI_Send(&data, R->m, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD);
         o_s_end = get_time();
         MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK,
                  MPI_COMM_WORLD, &status);
@@ -84,7 +86,7 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
       }
 
       if (rank) {
-        MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, SYNCH,
+        MPI_Send(&data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, SYNC,
                  MPI_COMM_WORLD); // Synch
         MPI_Recv(data, R->m, MPI_CHAR, RANK_ZERO, MPI_ANY_TAG, MPI_COMM_WORLD,
                  &status);
@@ -114,7 +116,8 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
 
   if (!rank) {
     MPI_Send(data, R->m, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
-    printf("sent termination with flag = %d\n", STOP);
+    // BUG:
+    // printf("sent termination with flag = %d\n", STOP);
     R->rtt_m = r[1];
     R->o_s = o_s_temp / nruns;
     R->g_m = R->rtt_m - rtt1 + g0;
@@ -125,10 +128,10 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
     rttm.tv_nsec = temp % 1000000000ULL;
   }
 
-  for (int i; i < AVG_RUNS; i++) {
+  for (int i = 0; i < nruns; i++) {
     if (!rank) {
-      MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD,
-               &status); // Synch
+      MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, READY,
+               MPI_COMM_WORLD); // Synch
 
       // Sleep for just slightly longer than rttm as per paper
       nanosleep(&rttm, NULL);
@@ -137,20 +140,19 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
       MPI_Recv(data, R->m, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD, &status);
       o_r_end = get_time();
 
-      if (i > 199) {
-        o_r_temp += o_r_end - o_r_start - timer_overhead;
-      }
+      o_r_temp += o_r_end - o_r_start - timer_overhead;
     }
 
     if (rank) {
-      MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, WORK,
-               MPI_COMM_WORLD); // Synch
+      MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, READY,
+               MPI_COMM_WORLD, &status); // Synch
       MPI_Send(data, R->m, MPI_CHAR, RANK_ZERO, WORK, MPI_COMM_WORLD);
     }
-    printf("rank = %d, i = %d\n", rank, i);
   }
 
-  R->o_r = o_r_temp / (AVG_RUNS - 200);
+  if (!rank) {
+    R->o_r = o_r_temp / nruns;
+  }
 
   free(data);
 
@@ -253,7 +255,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  double g_0 = g[1];
+  unsigned long long g_0 = g[1];
 
   // Tells the mirror to stop waiting on a recv
   if (!rank) {
@@ -265,8 +267,8 @@ int main(int argc, char *argv[]) {
 
   // Print values for part 1
   if (!rank) {
-    printf("rtt_1 = %.8f, g0 = %.8f, rttn = %.8f, L = %f \n", (double)rtt_1,
-           g_0, (double)rttn, L);
+    printf("rtt_1 = %llu, g0 = %llu, rttn = %llu, L = %f \n", rtt_1, g_0, rttn,
+           L);
   }
 
   // Start of part 2/3, calculating Os(m), Or(m), L, g(m) and RTT(m)
@@ -278,6 +280,11 @@ int main(int argc, char *argv[]) {
 
   R.m = 16;
   getResult(&R, g_0, rtt_1);
+
+  if (!rank) {
+    printf("R.M = %d, g_m = %llu, o_s = %llu, o_r = %llu, rtt_m = %llu \n", R.m,
+           R.g_m, R.o_s, R.o_r, R.rtt_m);
+  }
 
   // Print values for part 2 and 3
 
