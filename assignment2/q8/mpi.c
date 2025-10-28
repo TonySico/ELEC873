@@ -250,34 +250,34 @@ void getResult(result *R) {
     rttm.tv_nsec = temp % 1000000000ULL;
   }
 
-  // for (int i = 0; i < nruns; i++) {
-  //   if (!rank) {
-  //     // Synch
-  //     MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, READY_OR,
-  //              MPI_COMM_WORLD);
-  //
-  //     // Sleep for just slightly longer than rttm as per paper
-  //     nanosleep(&rttm, NULL);
-  //
-  //     o_r_start = get_time();
-  //     MPI_Recv(data, R->m, MPI_CHAR, RANK_ONE, WORK_OR, MPI_COMM_WORLD,
-  //              &status);
-  //     o_r_end = get_time();
-  //
-  //     o_r_temp += o_r_end - o_r_start - timer_overhead;
-  //   }
-  //
-  //   if (rank) {
-  //     // Synch
-  //     MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, READY_OR,
-  //              MPI_COMM_WORLD, &status);
-  //     MPI_Send(data, R->m, MPI_CHAR, RANK_ZERO, WORK_OR, MPI_COMM_WORLD);
-  //   }
-  // }
-  //
-  // if (!rank) {
-  //   R->o_r = o_r_temp / nruns;
-  // }
+  for (int i = 0; i < nruns; i++) {
+    if (!rank) {
+      // Synch
+      MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, READY_OR,
+               MPI_COMM_WORLD);
+
+      // Sleep for just slightly longer than rttm as per paper
+      nanosleep(&rttm, NULL);
+
+      o_r_start = get_time();
+      MPI_Recv(data, R->m, MPI_CHAR, RANK_ONE, WORK_OR, MPI_COMM_WORLD,
+               &status);
+      o_r_end = get_time();
+
+      o_r_temp += o_r_end - o_r_start - timer_overhead;
+    }
+
+    if (rank) {
+      // Synch
+      MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, READY_OR,
+               MPI_COMM_WORLD, &status);
+      MPI_Send(data, R->m, MPI_CHAR, RANK_ZERO, WORK_OR, MPI_COMM_WORLD);
+    }
+  }
+
+  if (!rank) {
+    R->o_r = o_r_temp / nruns;
+  }
 
   free(data);
 
@@ -439,6 +439,8 @@ int main(int argc, char *argv[]) {
   }
 
   // now to extrapolate again, but for o_s, o_r, and g(m)
+  while (extrapolateGMOverM(list) && flag) {
+  }
 
   if (!rank)
     printList(list);
