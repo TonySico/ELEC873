@@ -125,10 +125,6 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
     rttm.tv_nsec = temp % 1000000000ULL;
   }
 
-  printf(
-      "Rank %d is entering looping 2 and running nrun = %d times, R.m = %d\n",
-      rank, nruns, R->m);
-
   for (int i = 0; i < nruns; i++) {
     if (!rank) {
       MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, READY_OR,
