@@ -192,7 +192,7 @@ void getResult(result *R) {
       r[0] = r[1];
     }
 
-    for (int i = 0; i < nruns && flag; i++) {
+    for (int i = 0; i < 64 && flag; i++) {
       if (!rank) {
         MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, SYNC,
                  MPI_COMM_WORLD, &status); // Synch
@@ -232,14 +232,14 @@ void getResult(result *R) {
     }
 
     if (!rank) {
-      r[1] = rtt_temp / nruns;
+      r[1] = rtt_temp / 64;
     }
   }
 
   if (!rank) {
     MPI_Send(data, R->m, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
     R->rtt_m = r[1];
-    R->o_s = o_s_temp / nruns;
+    R->o_s = o_s_temp / 64;
     R->g_m = R->rtt_m - rtt_1 + g_0;
     R->g_m_over_m = (double)R->g_m / (double)R->m;
 
