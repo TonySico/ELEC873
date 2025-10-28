@@ -75,7 +75,7 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
                  MPI_COMM_WORLD, &status); // Synch
 
         oS_rtt_start = get_time();
-        printf("failing here?1");
+        // printf("failing here?1 on R.m = %d\n", R->m);
         MPI_Send(&data, R->m, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD);
         o_s_end = get_time();
         MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, ZERO_CHECK,
