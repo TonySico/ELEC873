@@ -183,7 +183,7 @@ void getResult(result *R) {
   unsigned long long oS_rtt_start, rtt_end,
       rtt_temp = 0, o_r_start, o_s_temp = 0, o_r_end, o_s_end, o_r_temp = 0;
 
-  char *data = malloc(R->m);
+  char *data = calloc(R->m, 1);
   memset(data, 'a', R->m);
 
   MPI_Status status;
@@ -199,16 +199,18 @@ void getResult(result *R) {
       r[0] = r[1];
     }
 
-    for (int i = 0; i < nruns && flag; i++) {
+    // FIX:
+    // change 64 to  nruns
+    for (int i = 0; i < 64 && flag; i++) {
       if (!rank) {
-        MPI_Recv(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, SYNC,
+        MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, SYNC,
                  MPI_COMM_WORLD, &status); // Synch
 
         oS_rtt_start = get_time();
         // printf("failing here?1 on R.m = %d\n", R->m);
         MPI_Send(data, R->m, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD);
         o_s_end = get_time();
-        MPI_Recv(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, ZERO_CHECK,
+        MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, ZERO_CHECK,
                  MPI_COMM_WORLD, &status);
 
         rtt_end = get_time();
@@ -218,14 +220,14 @@ void getResult(result *R) {
       }
 
       if (rank) {
-        MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, SYNC,
+        MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, SYNC,
                  MPI_COMM_WORLD); // Synch
         MPI_Recv(data, R->m, MPI_CHAR, RANK_ZERO, MPI_ANY_TAG, MPI_COMM_WORLD,
                  &status);
         flag = status.MPI_TAG;
 
         if (flag)
-          MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, ZERO_CHECK,
+          MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, ZERO_CHECK,
                    MPI_COMM_WORLD);
       }
     }
@@ -239,14 +241,14 @@ void getResult(result *R) {
     }
 
     if (!rank) {
-      r[1] = rtt_temp / nruns;
+      r[1] = rtt_temp / 64;
     }
   }
 
   if (!rank) {
     MPI_Send(data, R->m, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
     R->rtt_m = r[1];
-    R->o_s = o_s_temp / nruns;
+    R->o_s = o_s_temp / 64;
     R->g_m = R->rtt_m - rtt_1 + g_0;
     R->g_m_over_m = (double)R->g_m / (double)R->m;
 
@@ -258,7 +260,7 @@ void getResult(result *R) {
 
   for (int i = 0; i < nruns; i++) {
     if (!rank) {
-      MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, READY_OR,
+      MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, READY_OR,
                MPI_COMM_WORLD); // Synch
 
       // Sleep for just slightly longer than rttm as per paper
@@ -273,7 +275,7 @@ void getResult(result *R) {
     }
 
     if (rank) {
-      MPI_Recv(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, READY_OR,
+      MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, READY_OR,
                MPI_COMM_WORLD, &status); // Synch
       MPI_Send(data, R->m, MPI_CHAR, RANK_ZERO, WORK_OR, MPI_COMM_WORLD);
     }
@@ -406,7 +408,7 @@ int main(int argc, char *argv[]) {
 
   // Extrapolate and check values for g(m)/m
   int k;
-  for (k = 0; k <= K_M; k++) {
+  for (k = 0; k < K_M; k++) {
     R->m = m(k);
     getResult(R);
     insertNode(list, *R);
