@@ -298,7 +298,6 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  unsigned long long g[2] = {10.0, 1.0};
   int flag = WORK;
 
   unsigned long long offset = get_time();
@@ -337,8 +336,10 @@ int main(int argc, char *argv[]) {
   }
   // end rtt1 calc
 
+  unsigned long long g[2] = {10.0, 1.0};
   // Loop for calculating g0 and RTTn
-  while (epsilon(g[1], g[0]) > 1 && flag && rtt_1 > (0.01 * rttn)) {
+  while ((epsilon((double)g[1], (double)g[0]) > 1 || rtt_1 > (0.01 * rttn)) &&
+         flag) {
 
     // Set prev g value to current for new calculation
     if (!rank) {
@@ -368,6 +369,8 @@ int main(int argc, char *argv[]) {
 
       g[1] = (g_end - g_rttn_start - timer_overhead) / n_runs;
       rttn = (rtt_end - g_rttn_start - 2 * timer_overhead);
+      printf("rttn = %llu, g[1] = %llu, g[0] = %llu, rtt_1, %llu\n", rttn, g[1],
+             g[0], rtt_1);
     }
 
     if (rank) {
@@ -396,8 +399,9 @@ int main(int argc, char *argv[]) {
 
   // Print values for part 1
   if (!rank) {
-    printf("rtt_1 = %llu, g0 = %llu, rttn = %llu, L = %f \n", rtt_1, g_0, rttn,
-           L);
+    printf("rtt_1 = %llu, g0 = %llu, rttn (calculated with nruns = %d)= %llu, "
+           "L = %f \n",
+           rtt_1, g_0, n_runs, rttn, L);
   }
 
   result *R = malloc(sizeof(result));
@@ -414,11 +418,12 @@ int main(int argc, char *argv[]) {
     insertNode(list, *R);
   }
 
-  // If the value at k is not within 1% of the value predicted by k-1 and k-2,
-  // increase k by one and generate new result and compare again
+  // If the value at k is not within 1% of the value predicted by k-1 and
+  k - 2,
+      // increase k by one and generate new result and compare again
 
-  // Assume that the paper meant g(m)/m must be within 1%
-  flag = WORK;
+      // Assume that the paper meant g(m)/m must be within 1%
+      flag = WORK;
   while (extrapolateGMOverM(list) && flag && k < 30) {
 
     if (!rank) {
