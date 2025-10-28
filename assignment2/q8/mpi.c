@@ -192,13 +192,13 @@ void getResult(result *R) {
       r[0] = r[1];
     }
 
-    for (int i = 0; i < 64 && flag; i++) {
+    for (int i = 0; i < nruns && flag; i++) {
       if (!rank) {
+        // Synch
         MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, SYNC,
-                 MPI_COMM_WORLD, &status); // Synch
+                 MPI_COMM_WORLD, &status);
 
         oS_rtt_start = get_time();
-        // printf("failing here?1 on R.m = %d\n", R->m);
         MPI_Send(data, R->m, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD);
         o_s_end = get_time();
         MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, ZERO_CHECK,
@@ -211,8 +211,9 @@ void getResult(result *R) {
       }
 
       if (rank) {
+        // Synch
         MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, SYNC,
-                 MPI_COMM_WORLD); // Synch
+                 MPI_COMM_WORLD);
         MPI_Recv(data, R->m, MPI_CHAR, RANK_ZERO, MPI_ANY_TAG, MPI_COMM_WORLD,
                  &status);
         flag = status.MPI_TAG;
@@ -232,14 +233,14 @@ void getResult(result *R) {
     }
 
     if (!rank) {
-      r[1] = rtt_temp / 64;
+      r[1] = rtt_temp / nruns;
     }
   }
 
   if (!rank) {
     MPI_Send(data, R->m, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
     R->rtt_m = r[1];
-    R->o_s = o_s_temp / 64;
+    R->o_s = o_s_temp / nruns;
     R->g_m = R->rtt_m - rtt_1 + g_0;
     R->g_m_over_m = (double)R->g_m / (double)R->m;
 
@@ -249,32 +250,34 @@ void getResult(result *R) {
     rttm.tv_nsec = temp % 1000000000ULL;
   }
 
-  for (int i = 0; i < nruns; i++) {
-    if (!rank) {
-      MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, READY_OR,
-               MPI_COMM_WORLD); // Synch
-
-      // Sleep for just slightly longer than rttm as per paper
-      nanosleep(&rttm, NULL);
-
-      o_r_start = get_time();
-      MPI_Recv(data, R->m, MPI_CHAR, RANK_ONE, WORK_OR, MPI_COMM_WORLD,
-               &status);
-      o_r_end = get_time();
-
-      o_r_temp += o_r_end - o_r_start - timer_overhead;
-    }
-
-    if (rank) {
-      MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, READY_OR,
-               MPI_COMM_WORLD, &status); // Synch
-      MPI_Send(data, R->m, MPI_CHAR, RANK_ZERO, WORK_OR, MPI_COMM_WORLD);
-    }
-  }
-
-  if (!rank) {
-    R->o_r = o_r_temp / nruns;
-  }
+  // for (int i = 0; i < nruns; i++) {
+  //   if (!rank) {
+  //     // Synch
+  //     MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, READY_OR,
+  //              MPI_COMM_WORLD);
+  //
+  //     // Sleep for just slightly longer than rttm as per paper
+  //     nanosleep(&rttm, NULL);
+  //
+  //     o_r_start = get_time();
+  //     MPI_Recv(data, R->m, MPI_CHAR, RANK_ONE, WORK_OR, MPI_COMM_WORLD,
+  //              &status);
+  //     o_r_end = get_time();
+  //
+  //     o_r_temp += o_r_end - o_r_start - timer_overhead;
+  //   }
+  //
+  //   if (rank) {
+  //     // Synch
+  //     MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, READY_OR,
+  //              MPI_COMM_WORLD, &status);
+  //     MPI_Send(data, R->m, MPI_CHAR, RANK_ZERO, WORK_OR, MPI_COMM_WORLD);
+  //   }
+  // }
+  //
+  // if (!rank) {
+  //   R->o_r = o_r_temp / nruns;
+  // }
 
   free(data);
 
@@ -401,19 +404,19 @@ int main(int argc, char *argv[]) {
 
   // Extrapolate and check values for g(m)/m
   int k;
-  for (k = 0; k < K_M; k++) {
+  for (k = 30; k < 34; k++) {
     R->m = m(k);
+    printf("%d = m\n", R->m);
     getResult(R);
     insertNode(list, *R);
   }
 
-  // If the value at k is not within 1% of the value predicted by k-1 and
-  k - 2,
-      // increase k by one and generate new result and compare again
+  // If the value at k is not within 1% of the value predicted by k-1 and k - 2,
+  // increase k by one and generate new result and compare again
 
-      // Assume that the paper meant g(m)/m must be within 1%
-      flag = WORK;
-  while (extrapolateGMOverM(list) && flag && k < 30) {
+  // Assume that the paper meant g(m)/m must be within 1%
+  flag = WORK;
+  while (extrapolateGMOverM(list) && flag && k <= 30) {
 
     if (!rank) {
       printf("k = %d ", k);
@@ -435,6 +438,8 @@ int main(int argc, char *argv[]) {
   if (!rank) {
     MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
   }
+
+  // now to extrapolate again, but for o_s, o_r, and g(m)
 
   if (!rank)
     printList(list);
