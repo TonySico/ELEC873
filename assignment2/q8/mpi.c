@@ -363,8 +363,8 @@ int main(int argc, char *argv[]) {
 
       g[1] = (g_end - g_rttn_start - timer_overhead) / (double)n_runs;
       rttn = (rtt_end - g_rttn_start - 2 * timer_overhead);
-      printf("rttn = %llu, g[1] = %f, g[0] = %f, rtt_1, %llu\n", rttn, g[1],
-             g[0], rtt_1);
+      // printf("rttn = %llu, g[1] = %f, g[0] = %f, rtt_1, %llu\n", rttn, g[1],
+      //        g[0], rtt_1);
     }
 
     if (rank) {
@@ -404,9 +404,8 @@ int main(int argc, char *argv[]) {
 
   // Extrapolate and check values for g(m)/m
   int k;
-  for (k = 30; k < 34; k++) {
+  for (k = 0; k < K_M; k++) {
     R->m = m(k);
-    printf("%d = m\n", R->m);
     getResult(R);
     insertNode(list, *R);
   }
