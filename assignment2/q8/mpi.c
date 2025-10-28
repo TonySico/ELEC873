@@ -21,7 +21,7 @@ unsigned long long timer_overhead;
 #define READY_OR 4
 #define ZERO_CHECK 5
 
-#define K_M 18
+#define K_M 28
 #define m(x) (1ULL << x)
 
 #define AVG_RUNS 1024
