@@ -10,7 +10,8 @@
 
 int rank;
 unsigned long long timer_overhead;
-unsigned long long g_0, rtt_1;
+unsigned long long rtt_1;
+double g_0;
 
 #define ZERO_DATA_COUNT 0
 #define RANK_ZERO 0
@@ -140,31 +141,23 @@ unsigned long long get_time() {
 }
 
 // figures out whether g(m)/m is within the expected range based on the previous
-// values
+// values and returns a binary 1 or 0
 int extrapolateGMOverM(List *list) {
   float e;
 
   // extrapolate using
   if (!rank) {
-    e = epsilon(
-        list->tail->R.g_m_over_m,
-        list->tail->prev->R.g_m_over_m +
-            (list->tail->R.m - list->tail->prev->R.m) *
-                ((list->tail->prev->prev->R.g_m_over_m -
-                  list->tail->prev->R.g_m_over_m) /
-                 (list->tail->prev->prev->R.m - list->tail->prev->R.m)));
-
-    // x2 = 65536,  y2 = 0.27365112
-    // x1 = 131072, y1 = 0.23700714
-    // x  = 262144, y  = 0.25094986
-
+    // calculates via y = y1 + (((y2-y1) / (x2-x1)) * (x-x1))
     double y = list->tail->prev->R.g_m_over_m +
                (list->tail->R.m - list->tail->prev->R.m) *
                    ((list->tail->prev->prev->R.g_m_over_m -
                      list->tail->prev->R.g_m_over_m) /
                     (list->tail->prev->prev->R.m - list->tail->prev->R.m));
 
-    printf("true = %.8f, guess = %.8f", list->tail->R.g_m_over_m, y);
+    // gets the percentage difference between the measured value and y
+    e = epsilon(list->tail->R.g_m_over_m, y);
+
+    printf("true = %.8f, guess = %.8f ", list->tail->R.g_m_over_m, y);
 
     if (!rank)
       printf("e = %f\n", e);
@@ -199,9 +192,7 @@ void getResult(result *R) {
       r[0] = r[1];
     }
 
-    // FIX:
-    // change 64 to  nruns
-    for (int i = 0; i < 64 && flag; i++) {
+    for (int i = 0; i < nruns && flag; i++) {
       if (!rank) {
         MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, SYNC,
                  MPI_COMM_WORLD, &status); // Synch
@@ -241,14 +232,14 @@ void getResult(result *R) {
     }
 
     if (!rank) {
-      r[1] = rtt_temp / 64;
+      r[1] = rtt_temp / nruns;
     }
   }
 
   if (!rank) {
     MPI_Send(data, R->m, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
     R->rtt_m = r[1];
-    R->o_s = o_s_temp / 64;
+    R->o_s = o_s_temp / nruns;
     R->g_m = R->rtt_m - rtt_1 + g_0;
     R->g_m_over_m = (double)R->g_m / (double)R->m;
 
@@ -336,7 +327,7 @@ int main(int argc, char *argv[]) {
   }
   // end rtt1 calc
 
-  unsigned long long g[2] = {10.0, 1.0};
+  double g[2] = {10.0, 1.0};
   // Loop for calculating g0 and RTTn
   while ((epsilon((double)g[1], (double)g[0]) > 1 || rtt_1 > (0.01 * rttn)) &&
          flag) {
@@ -367,9 +358,9 @@ int main(int argc, char *argv[]) {
                MPI_COMM_WORLD, &status);
       rtt_end = get_time();
 
-      g[1] = (g_end - g_rttn_start - timer_overhead) / n_runs;
+      g[1] = (g_end - g_rttn_start - timer_overhead) / (double)n_runs;
       rttn = (rtt_end - g_rttn_start - 2 * timer_overhead);
-      printf("rttn = %llu, g[1] = %llu, g[0] = %llu, rtt_1, %llu\n", rttn, g[1],
+      printf("rttn = %llu, g[1] = %f, g[0] = %f, rtt_1, %llu\n", rttn, g[1],
              g[0], rtt_1);
     }
 
@@ -379,8 +370,6 @@ int main(int argc, char *argv[]) {
     }
 
     n_runs *= 2;
-    // ensures that if n goes too high, it doesn't waste server resources and
-    // just fails out
     if (n_runs > pow(2, 20)) {
       printf("error, n_runs was too high\n");
       break;
@@ -399,7 +388,7 @@ int main(int argc, char *argv[]) {
 
   // Print values for part 1
   if (!rank) {
-    printf("rtt_1 = %llu, g0 = %llu, rttn (calculated with nruns = %d)= %llu, "
+    printf("rtt_1 = %llu, g0 = %f, rttn (calculated with nruns = %d)= %llu, "
            "L = %f \n",
            rtt_1, g_0, n_runs, rttn, L);
   }
