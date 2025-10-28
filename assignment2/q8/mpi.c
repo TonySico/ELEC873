@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 int rank;
 unsigned long long timer_overhead;
@@ -41,6 +42,43 @@ typedef struct {
 
 } result;
 
+typedef struct {
+  result R;
+  struct Node *next;
+  struct Node *prev;
+} Node;
+
+typedef struct {
+  Node *head;
+  Node *tail;
+  int size;
+} List;
+
+void freeNodeM(List list, int m) {}
+
+void freeList(List list, int m) {}
+
+void appendNode(List *list, result newResult) {
+
+  Node *newNode = malloc(sizeof(Node));
+
+  newNode->R = newResult;
+  newNode->next = NULL;
+  // newNode->prev = list->tail;
+
+  if (list->head == NULL) {
+    list->head = newNode;
+    list->tail = newNode;
+  } else {
+    // list->tail->next = newNode;
+    list->tail = newNode;
+  }
+
+  list->size++;
+}
+
+void insertNodeAtM(List list, int m) {}
+
 unsigned long long get_time() {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -53,8 +91,6 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
 
   char *data = malloc(R->m);
   memset(data, 'a', R->m);
-
-  MPI_Barrier(MPI_COMM_WORLD);
 
   MPI_Status status;
   struct timespec rttm;
@@ -132,6 +168,7 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
 
       // Sleep for just slightly longer than rttm as per paper
       nanosleep(&rttm, NULL);
+      usleep(100);
 
       o_r_start = get_time();
       MPI_Recv(data, R->m, MPI_CHAR, RANK_ONE, WORK_OR, MPI_COMM_WORLD,
@@ -267,16 +304,16 @@ int main(int argc, char *argv[]) {
   }
 
   // Start of part 2/3, calculating Os(m), Or(m), L, g(m) and RTT(m)
-  result R;
+  result *R = malloc(sizeof(result));
 
   for (int k = 0; k <= K_M; k++) {
-    R.m = m(k);
-    getResult(&R, g_0, rtt_1);
-    MPI_Barrier(MPI_COMM_WORLD);
+    R->m = m(k);
+    getResult(R, g_0, rtt_1);
+    // MPI_Barrier(MPI_COMM_WORLD);
 
     if (!rank) {
-      printf("m = %d, g_m = %llu, o_s = %llu, o_r = %llu, rtt_m = %llu \n", R.m,
-             R.g_m, R.o_s, R.o_r, R.rtt_m);
+      printf("m = %d, g_m = %llu, o_s = %llu, o_r = %llu, rtt_m = %llu \n",
+             R->m, R->g_m, R->o_s, R->o_r, R->rtt_m);
     }
   }
 
