@@ -16,8 +16,10 @@ unsigned long long timer_overhead;
 
 #define STOP 0
 #define WORK 1
-#define SYNC 2
-#define READY 3
+#define WORK_OR 2
+#define SYNC 3
+#define READY_OR 4
+#define ZERO_CHECK 5
 
 #define K_M 18
 #define m(x) (1ULL << x)
@@ -52,6 +54,8 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
   char *data = malloc(R->m);
   memset(data, 'a', R->m);
 
+  MPI_Barrier(MPI_COMM_WORLD);
+
   MPI_Status status;
   struct timespec rttm;
 
@@ -71,18 +75,16 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
                  MPI_COMM_WORLD, &status); // Synch
 
         oS_rtt_start = get_time();
+        printf("failing here?1");
         MPI_Send(&data, R->m, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD);
         o_s_end = get_time();
-        MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK,
+        MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, ZERO_CHECK,
                  MPI_COMM_WORLD, &status);
 
         rtt_end = get_time();
 
         o_s_temp += o_s_end - oS_rtt_start - timer_overhead;
         rtt_temp += rtt_end - oS_rtt_start - 2 * timer_overhead;
-        // BUG:
-        // printf("iter %d: o_s_temp = %llu and rtt_temp = %llu\n", i, rtt_temp,
-        //        o_s_temp);
       }
 
       if (rank) {
@@ -91,24 +93,21 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
         MPI_Recv(data, R->m, MPI_CHAR, RANK_ZERO, MPI_ANY_TAG, MPI_COMM_WORLD,
                  &status);
         flag = status.MPI_TAG;
-        // BUG:
-        // printf("rank %d, i= %d, flag = %d\n", rank, i, flag);
 
-        MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, WORK,
-                 MPI_COMM_WORLD);
+        if (flag)
+          MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, ZERO_CHECK,
+                   MPI_COMM_WORLD);
       }
     }
-    if (nruns < 60 && R->m <= m(10))
+    if (nruns < 60 && R->m <= m(10) && flag)
       nruns += 2;
-    else if (nruns < 15 && R->m > m(10))
+    else if (nruns < 15 && R->m > m(10) && flag)
       nruns += 2;
     else {
       if (!rank)
         flag = STOP;
     }
 
-    // BUG:
-    // printf("rank = %d, nruns = %d\n", rank, nruns);
     if (!rank) {
       r[1] = rtt_temp / nruns;
     }
@@ -116,8 +115,6 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
 
   if (!rank) {
     MPI_Send(data, R->m, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
-    // BUG:
-    // printf("sent termination with flag = %d\n", STOP);
     R->rtt_m = r[1];
     R->o_s = o_s_temp / nruns;
     R->g_m = R->rtt_m - rtt1 + g0;
@@ -128,25 +125,30 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
     rttm.tv_nsec = temp % 1000000000ULL;
   }
 
+  printf(
+      "Rank %d is entering looping 2 and running nrun = %d times, R.m = %d\n",
+      rank, nruns, R->m);
+
   for (int i = 0; i < nruns; i++) {
     if (!rank) {
-      MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, READY,
+      MPI_Send(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, READY_OR,
                MPI_COMM_WORLD); // Synch
 
       // Sleep for just slightly longer than rttm as per paper
       nanosleep(&rttm, NULL);
 
       o_r_start = get_time();
-      MPI_Recv(data, R->m, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD, &status);
+      MPI_Recv(data, R->m, MPI_CHAR, RANK_ONE, WORK_OR, MPI_COMM_WORLD,
+               &status);
       o_r_end = get_time();
 
       o_r_temp += o_r_end - o_r_start - timer_overhead;
     }
 
     if (rank) {
-      MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, READY,
+      MPI_Recv(data, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, READY_OR,
                MPI_COMM_WORLD, &status); // Synch
-      MPI_Send(data, R->m, MPI_CHAR, RANK_ZERO, WORK, MPI_COMM_WORLD);
+      MPI_Send(data, R->m, MPI_CHAR, RANK_ZERO, WORK_OR, MPI_COMM_WORLD);
     }
   }
 
@@ -276,14 +278,13 @@ int main(int argc, char *argv[]) {
 
   for (int k = 0; k <= K_M; k++) {
     R.m = m(k);
-  }
+    getResult(&R, g_0, rtt_1);
+    MPI_Barrier(MPI_COMM_WORLD);
 
-  R.m = 16;
-  getResult(&R, g_0, rtt_1);
-
-  if (!rank) {
-    printf("R.M = %d, g_m = %llu, o_s = %llu, o_r = %llu, rtt_m = %llu \n", R.m,
-           R.g_m, R.o_s, R.o_r, R.rtt_m);
+    if (!rank) {
+      printf("m = %d, g_m = %llu, o_s = %llu, o_r = %llu, rtt_m = %llu \n", R.m,
+             R.g_m, R.o_s, R.o_r, R.rtt_m);
+    }
   }
 
   // Print values for part 2 and 3
