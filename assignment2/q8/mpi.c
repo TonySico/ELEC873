@@ -399,7 +399,6 @@ int main(int argc, char *argv[]) {
   }
 
   result *R = malloc(sizeof(result));
-
   List *list = malloc(sizeof(List));
   list->tail = NULL;
   list->head = NULL;
@@ -418,17 +417,17 @@ int main(int argc, char *argv[]) {
 
   // Assume that the paper meant g(m)/m must be within 1%
   flag = WORK;
-  while (extrapolateGMOverM(list) && flag && k < 50) {
+  while (extrapolateGMOverM(list) && flag && k < 30) {
 
-    if (!rank)
+    if (!rank) {
+      printf("k = %d ", k);
       MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD);
-    else {
+    } else {
       MPI_Recv(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, MPI_ANY_TAG,
                MPI_COMM_WORLD, &status);
       flag = status.MPI_TAG;
       if (!flag)
         break;
-      printf("k = %d ", k);
     }
 
     k++;
