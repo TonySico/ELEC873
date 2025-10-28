@@ -10,6 +10,7 @@
 
 int rank;
 unsigned long long timer_overhead;
+unsigned long long g_0, rtt_1;
 
 #define ZERO_DATA_COUNT 0
 #define RANK_ZERO 0
@@ -22,7 +23,7 @@ unsigned long long timer_overhead;
 #define READY_OR 4
 #define ZERO_CHECK 5
 
-#define K_M 28
+#define K_M 18
 #define m(x) (1ULL << x)
 
 #define AVG_RUNS 1024
@@ -36,13 +37,14 @@ float epsilon(double new, double old) {
 typedef struct {
   int m;
   unsigned long long g_m;
+  double g_m_over_m;
   unsigned long long o_r;
   unsigned long long o_s;
   unsigned long long rtt_m;
 
 } result;
 
-typedef struct {
+typedef struct Node {
   result R;
   struct Node *next;
   struct Node *prev;
@@ -54,9 +56,20 @@ typedef struct {
   int size;
 } List;
 
-void freeNodeM(List list, int m) {}
+void freeList(List *list) {
 
-void freeList(List list, int m) {}
+  Node *current = list->tail;
+
+  while (current != NULL) {
+    Node *prev = current->prev;
+    free(current);
+    current = prev;
+  }
+
+  list->head = NULL;
+  list->tail = NULL;
+  list->size = 0;
+}
 
 void appendNode(List *list, result newResult) {
 
@@ -64,20 +77,61 @@ void appendNode(List *list, result newResult) {
 
   newNode->R = newResult;
   newNode->next = NULL;
-  // newNode->prev = list->tail;
+  newNode->prev = list->tail;
 
   if (list->head == NULL) {
     list->head = newNode;
     list->tail = newNode;
   } else {
-    // list->tail->next = newNode;
+    list->tail->next = newNode;
     list->tail = newNode;
   }
 
   list->size++;
 }
 
-void insertNodeAtM(List list, int m) {}
+void insertNode(List *list, result newResult) {
+  Node *newNode = malloc(sizeof(Node));
+  newNode->R = newResult;
+
+  Node *currentNode = list->head;
+  while (currentNode != NULL && currentNode->R.m < newNode->R.m &&
+         currentNode->next != NULL) {
+    currentNode = currentNode->next;
+  }
+
+  if (currentNode == NULL ||
+      (currentNode->next == NULL && currentNode->R.m <= newNode->R.m)) {
+    appendNode(list, newResult);
+    free(newNode);
+    return;
+
+  } else {
+    newNode->next = currentNode;
+    newNode->prev = currentNode->prev;
+
+    if (currentNode->prev != NULL)
+      currentNode->prev->next = newNode;
+    else
+      list->head = newNode;
+
+    currentNode->prev = newNode;
+    list->size++;
+  }
+}
+
+void printList(List *list) {
+  Node *currentNode = list->head;
+  int node = 0;
+  while (currentNode != NULL) {
+    printf("m = %d, g_m = %llu, g_m/m = %.8f, o_s = %llu, o_r = %llu, rtt_m = "
+           "%llu \n",
+           currentNode->R.m, currentNode->R.g_m, currentNode->R.g_m_over_m,
+           currentNode->R.o_s, currentNode->R.o_r, currentNode->R.rtt_m);
+    currentNode = currentNode->next;
+    node++;
+  }
+}
 
 unsigned long long get_time() {
   struct timespec ts;
@@ -85,7 +139,47 @@ unsigned long long get_time() {
   return ts.tv_sec * (unsigned long long)1e9 + ts.tv_nsec;
 }
 
-void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
+// figures out whether g(m)/m is within the expected range based on the previous
+// values
+int extrapolateGMOverM(List *list) {
+  float e;
+
+  // extrapolate using
+  if (!rank) {
+    e = epsilon(
+        list->tail->R.g_m_over_m,
+        list->tail->prev->R.g_m_over_m +
+            (list->tail->R.m - list->tail->prev->R.m) *
+                ((list->tail->prev->prev->R.g_m_over_m -
+                  list->tail->prev->R.g_m_over_m) /
+                 (list->tail->prev->prev->R.m - list->tail->prev->R.m)));
+
+    // x2 = 65536,  y2 = 0.27365112
+    // x1 = 131072, y1 = 0.23700714
+    // x  = 262144, y  = 0.25094986
+
+    double y = list->tail->prev->R.g_m_over_m +
+               (list->tail->R.m - list->tail->prev->R.m) *
+                   ((list->tail->prev->prev->R.g_m_over_m -
+                     list->tail->prev->R.g_m_over_m) /
+                    (list->tail->prev->prev->R.m - list->tail->prev->R.m));
+
+    printf("true = %.8f, guess = %.8f", list->tail->R.g_m_over_m, y);
+
+    if (!rank)
+      printf("e = %f\n", e);
+
+    if (e > 1) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
+void getResult(result *R) {
   unsigned long long oS_rtt_start, rtt_end,
       rtt_temp = 0, o_r_start, o_s_temp = 0, o_r_end, o_s_end, o_r_temp = 0;
 
@@ -153,7 +247,8 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
     MPI_Send(data, R->m, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
     R->rtt_m = r[1];
     R->o_s = o_s_temp / nruns;
-    R->g_m = R->rtt_m - rtt1 + g0;
+    R->g_m = R->rtt_m - rtt_1 + g_0;
+    R->g_m_over_m = (double)R->g_m / (double)R->m;
 
     unsigned long long temp = (unsigned long long)(R->rtt_m * 1.1);
 
@@ -168,7 +263,6 @@ void getResult(result *R, unsigned long long g0, unsigned long long rtt1) {
 
       // Sleep for just slightly longer than rttm as per paper
       nanosleep(&rttm, NULL);
-      usleep(100);
 
       o_r_start = get_time();
       MPI_Recv(data, R->m, MPI_CHAR, RANK_ONE, WORK_OR, MPI_COMM_WORLD,
@@ -208,7 +302,8 @@ int main(int argc, char *argv[]) {
   unsigned long long offset = get_time();
   unsigned long long g_rttn_start = get_time();
   timer_overhead = g_rttn_start - offset;
-  unsigned long long g_end, rtt_end, rtt1_total = 0, rtt_1 = 100, rttn = 0;
+  unsigned long long g_end, rtt_end, rtt1_total = 0, rttn = 0;
+  rtt_1 = 100;
 
   // run the 0 message size ping pong 1000 times to stabalize rtt1 value
   for (int i = 0; i < RTT1_AVG; i++) {
@@ -287,7 +382,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  unsigned long long g_0 = g[1];
+  g_0 = g[1];
 
   // Tells the mirror to stop waiting on a recv
   if (!rank) {
@@ -303,19 +398,73 @@ int main(int argc, char *argv[]) {
            L);
   }
 
-  // Start of part 2/3, calculating Os(m), Or(m), L, g(m) and RTT(m)
   result *R = malloc(sizeof(result));
 
-  for (int k = 0; k <= K_M; k++) {
-    R->m = m(k);
-    getResult(R, g_0, rtt_1);
-    // MPI_Barrier(MPI_COMM_WORLD);
+  List *list = malloc(sizeof(List));
+  list->tail = NULL;
+  list->head = NULL;
+  list->size = 0;
 
-    if (!rank) {
-      printf("m = %d, g_m = %llu, o_s = %llu, o_r = %llu, rtt_m = %llu \n",
-             R->m, R->g_m, R->o_s, R->o_r, R->rtt_m);
-    }
+  // Extrapolate and check values for g(m)/m
+  int k;
+  for (k = 0; k <= K_M; k++) {
+    R->m = m(k);
+    getResult(R);
+    insertNode(list, *R);
   }
+
+  // If the value at k is not within 1% of the value predicted by k-1 and k-2,
+  // increase k by one and generate new result and compare again
+
+  // Assume that the paper meant g(m)/m must be within 1%
+  flag = WORK;
+  while (extrapolateGMOverM(list) && flag && k < 50) {
+
+    if (!rank)
+      MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD);
+    else {
+      MPI_Recv(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, MPI_ANY_TAG,
+               MPI_COMM_WORLD, &status);
+      flag = status.MPI_TAG;
+      if (!flag)
+        break;
+      printf("k = %d ", k);
+    }
+
+    k++;
+    R->m = m(k);
+    getResult(R);
+    insertNode(list, *R);
+  }
+
+  if (!rank) {
+    MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
+  }
+
+  if (!rank)
+    printList(list);
+
+  // Extrapolate and check values for g(m)/m
+
+  freeList(list);
+  free(list);
+
+  // BUG:
+  //  if (!rank) {
+  //    List *list = malloc(sizeof(List));
+  //    list->tail = NULL;
+  //    list->head = NULL;
+  //    list->size = 0;
+  //    result R;
+  //    for (int i = 0; i < 100; i++) {
+  //      R.m = rand() % 100;
+  //      printf("%d\n", R.m);
+  //      insertNode(list, R);
+  //    }
+  //    printList(list);
+  //    freeList(list);
+  //    free(list);
+  //  }
 
   // Print values for part 2 and 3
 
