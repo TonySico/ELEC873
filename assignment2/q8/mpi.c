@@ -172,6 +172,54 @@ int extrapolateGMOverM(List *list) {
   return 1;
 }
 
+int extrapolate(Node *currentNode) {
+  float e_gm, e_os, e_or;
+
+  // extrapolate using
+  if (!rank) {
+    // calculates via y = y1 + (((y2-y1) / (x2-x1)) * (x-x1))
+
+    double y_gm = currentNode->prev->R.g_m +
+                  (currentNode->R.m - currentNode->prev->R.m) *
+                      ((double)(currentNode->prev->prev->R.g_m -
+                                currentNode->prev->R.g_m) /
+                       (currentNode->prev->prev->R.m - currentNode->prev->R.m));
+
+    double y_os = currentNode->prev->R.o_s +
+                  (currentNode->R.m - currentNode->prev->R.m) *
+                      ((double)(currentNode->prev->prev->R.o_s -
+                                currentNode->prev->R.o_s) /
+                       (currentNode->prev->prev->R.m - currentNode->prev->R.m));
+
+    double y_or = currentNode->prev->R.o_r +
+                  (currentNode->R.m - currentNode->prev->R.m) *
+                      ((double)(currentNode->prev->prev->R.o_r -
+                                currentNode->prev->R.o_r) /
+                       (currentNode->prev->prev->R.m - currentNode->prev->R.m));
+
+    // gets the percentage difference between the measured value and y
+    e_gm = epsilon(currentNode->R.g_m, y_gm);
+    e_os = epsilon(currentNode->R.o_s, y_os);
+    e_or = epsilon(currentNode->R.o_r, y_or);
+
+    printf("true_g_m = %.8llu, guess_g_m = %.8f ", currentNode->R.g_m, y_gm);
+    printf("true_o_s = %.8llu, guess_o_s = %.8f ", currentNode->R.o_s, y_os);
+    printf("true_o_r = %.8llu, guess_o_r = %.8f ", currentNode->R.o_r, y_or);
+
+    printf("e_gm = %f ", e_gm);
+    printf("e_os = %f ", e_os);
+    printf("e_or = %f\n", e_or);
+
+    if (e_gm > 1 || e_os > 1 || e_or > 1) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
 void getResult(result *R) {
   unsigned long long oS_rtt_start, rtt_end,
       rtt_temp = 0, o_r_start, o_s_temp = 0, o_r_end, o_s_end, o_r_temp = 0;
@@ -439,13 +487,27 @@ int main(int argc, char *argv[]) {
   }
 
   // now to extrapolate again, but for o_s, o_r, and g(m)
-  while (extrapolateGMOverM(list) && flag) {
+  // figure out the conditoins to keep going
+  // how to move pointer etc.
+  Node *currentNode = list->head->next->next;
+  while (extrapolate(currentNode) && flag && currentNode != NULL) {
+    if (!rank) {
+      MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD);
+    } else {
+      MPI_Recv(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, MPI_ANY_TAG,
+               MPI_COMM_WORLD, &status);
+      flag = status.MPI_TAG;
+      if (!flag)
+        break;
+    }
+
+    R->m = (currentNode->prev->R.m + currentNode->R.m) / 2;
+    getResult(R);
+    insertNode(list, *R);
   }
 
   if (!rank)
     printList(list);
-
-  // Extrapolate and check values for g(m)/m
 
   freeList(list);
   free(list);
