@@ -555,7 +555,7 @@ int main(int argc, char *argv[]) {
     double o = ((double)list->head->R.o_s + list->head->R.o_r) / 2;
     unsigned long long g = list->head->R.g_m;
     double G = list->tail->R.g_m_over_m;
-    int P = 2; // Run with -np 2
+    int P = size; // Run with -np 2
 
     printf("LogP/LogGP: L = %.8f \n", L);
     printf("LogP/LogGP: o = %.8f \n", o);
