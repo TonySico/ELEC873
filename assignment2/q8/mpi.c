@@ -23,6 +23,7 @@ double g_0;
 #define SYNC 3
 #define READY_OR 4
 #define ZERO_CHECK 5
+#define SKIP 6
 
 #define K_M 18
 #define m(x) (1ULL << x)
@@ -147,7 +148,7 @@ int extrapolateGMOverM(List *list) {
 
   // extrapolate using
   if (!rank) {
-    // calculates via y = y1 + (((y2-y1) / (x2-x1)) * (x-x1))
+    // calculates via y = y1 + ((x-x1) * ((y2-y1) / (x2-x1)))
     double y = list->tail->prev->R.g_m_over_m +
                (list->tail->R.m - list->tail->prev->R.m) *
                    ((list->tail->prev->prev->R.g_m_over_m -
@@ -177,39 +178,48 @@ int extrapolate(Node *currentNode) {
 
   // extrapolate using
   if (!rank) {
-    // calculates via y = y1 + (((y2-y1) / (x2-x1)) * (x-x1))
+    // calculates via y = y1 + ((x-x1) * ((y2-y1) / (x2-x1)))
 
-    double y_gm = currentNode->prev->R.g_m +
-                  (currentNode->R.m - currentNode->prev->R.m) *
-                      ((double)(currentNode->prev->prev->R.g_m -
-                                currentNode->prev->R.g_m) /
-                       (currentNode->prev->prev->R.m - currentNode->prev->R.m));
+    double y_gm =
+        (double)currentNode->prev->R.g_m +
+        ((double)(currentNode->R.m - currentNode->prev->R.m)) *
+            (((double)((long long)currentNode->prev->prev->R.g_m -
+                       (long long)currentNode->prev->R.g_m)) /
+             ((double)(currentNode->prev->prev->R.m - currentNode->prev->R.m)));
 
-    double y_os = currentNode->prev->R.o_s +
-                  (currentNode->R.m - currentNode->prev->R.m) *
-                      ((double)(currentNode->prev->prev->R.o_s -
-                                currentNode->prev->R.o_s) /
-                       (currentNode->prev->prev->R.m - currentNode->prev->R.m));
+    printf("y1 = %llu, y2 = %llu, x = %d, x1 = %d, x2 = %d\n",
+           currentNode->prev->R.g_m, currentNode->prev->prev->R.g_m,
+           currentNode->R.m, currentNode->prev->R.m,
+           currentNode->prev->prev->R.m);
 
-    double y_or = currentNode->prev->R.o_r +
-                  (currentNode->R.m - currentNode->prev->R.m) *
-                      ((double)(currentNode->prev->prev->R.o_r -
-                                currentNode->prev->R.o_r) /
-                       (currentNode->prev->prev->R.m - currentNode->prev->R.m));
+    double y_os =
+        (double)currentNode->prev->R.o_s +
+        ((double)(currentNode->R.m - currentNode->prev->R.m)) *
+            (((double)((long long)currentNode->prev->prev->R.o_s -
+                       (long long)currentNode->prev->R.o_s)) /
+             ((double)(currentNode->prev->prev->R.m - currentNode->prev->R.m)));
+
+    double y_or =
+        (double)currentNode->prev->R.o_r +
+        ((double)(currentNode->R.m - currentNode->prev->R.m)) *
+            (((double)((long long)currentNode->prev->prev->R.o_r -
+                       (long long)currentNode->prev->R.o_r)) /
+             ((double)(currentNode->prev->prev->R.m - currentNode->prev->R.m)));
 
     // gets the percentage difference between the measured value and y
     e_gm = epsilon(currentNode->R.g_m, y_gm);
     e_os = epsilon(currentNode->R.o_s, y_os);
     e_or = epsilon(currentNode->R.o_r, y_or);
 
-    printf("true_g_m = %.8llu, guess_g_m = %.8f ", currentNode->R.g_m, y_gm);
-    printf("true_o_s = %.8llu, guess_o_s = %.8f ", currentNode->R.o_s, y_os);
-    printf("true_o_r = %.8llu, guess_o_r = %.8f ", currentNode->R.o_r, y_or);
+    printf("true_g_m = %llu, guess_g_m = %.8f ", currentNode->R.g_m, y_gm);
+    printf("true_o_s = %llu, guess_o_s = %.8f ", currentNode->R.o_s, y_os);
+    printf("true_o_r = %llu, guess_o_r = %.8f ", currentNode->R.o_r, y_or);
 
     printf("e_gm = %f ", e_gm);
     printf("e_os = %f ", e_os);
     printf("e_or = %f\n", e_or);
 
+    // if the difference is more than 1% return a one to keep looping
     if (e_gm > 1 || e_os > 1 || e_or > 1) {
       return 1;
     } else {
@@ -289,7 +299,7 @@ void getResult(result *R) {
     MPI_Send(data, R->m, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
     R->rtt_m = r[1];
     R->o_s = o_s_temp / nruns;
-    R->g_m = R->rtt_m - rtt_1 + g_0;
+    R->g_m = R->rtt_m - rtt_1 + (unsigned long long)g_0;
     R->g_m_over_m = (double)R->g_m / (double)R->m;
 
     unsigned long long temp = (unsigned long long)(R->rtt_m * 1.1);
@@ -463,7 +473,7 @@ int main(int argc, char *argv[]) {
 
   // Assume that the paper meant g(m)/m must be within 1%
   flag = WORK;
-  while (extrapolateGMOverM(list) && flag && k <= 30) {
+  while (extrapolateGMOverM(list) && flag && k < 30) {
 
     if (!rank) {
       printf("k = %d ", k);
@@ -486,24 +496,52 @@ int main(int argc, char *argv[]) {
     MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
   }
 
-  // now to extrapolate again, but for o_s, o_r, and g(m)
-  // figure out the conditoins to keep going
-  // how to move pointer etc.
+  // start at the third node at least to have two from which to extapolate;
+  MPI_Barrier(MPI_COMM_WORLD);
   Node *currentNode = list->head->next->next;
-  while (extrapolate(currentNode) && flag && currentNode != NULL) {
-    if (!rank) {
-      MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK, MPI_COMM_WORLD);
-    } else {
-      MPI_Recv(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, MPI_ANY_TAG,
-               MPI_COMM_WORLD, &status);
-      flag = status.MPI_TAG;
-      if (!flag)
-        break;
-    }
 
-    R->m = (currentNode->prev->R.m + currentNode->R.m) / 2;
-    getResult(R);
-    insertNode(list, *R);
+  flag = WORK;
+
+  while (flag && currentNode != NULL) {
+
+    if ((currentNode->R.m - currentNode->prev->R.m) >
+        fmax(32, 0.01 * currentNode->R.m)) {
+
+      printf("Rank %d, CurrentNode m = %d\n", rank, currentNode->R.m);
+
+      if (!rank) {
+        if (extrapolate(currentNode)) {
+          MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, WORK,
+                   MPI_COMM_WORLD);
+          if ((currentNode->prev->R.m + currentNode->R.m) / 2 <= m(30))
+            R->m = (currentNode->prev->R.m + currentNode->R.m) / 2;
+          printf("Rank %d New m value (%d) added\n", rank, R->m);
+          getResult(R);
+          insertNode(list, *R);
+        } else
+          MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, SKIP,
+                   MPI_COMM_WORLD);
+      } else {
+        MPI_Recv(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ZERO, MPI_ANY_TAG,
+                 MPI_COMM_WORLD, &status);
+        flag = status.MPI_TAG;
+        if (flag == STOP)
+          break;
+        else if (flag == WORK) {
+          if ((currentNode->prev->R.m + currentNode->R.m) / 2 <= m(30))
+            R->m = (currentNode->prev->R.m + currentNode->R.m) / 2;
+          printf("Rank %d New m value (%d) added\n", rank, R->m);
+          getResult(R);
+          insertNode(list, *R);
+        }
+      }
+    }
+    currentNode = currentNode->next;
+  }
+
+  printf("Rank %d done while loop\n", rank);
+  if (!rank) {
+    MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
   }
 
   if (!rank)
