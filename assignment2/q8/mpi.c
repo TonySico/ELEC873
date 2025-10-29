@@ -187,10 +187,11 @@ int extrapolate(Node *currentNode) {
                        (long long)currentNode->prev->R.g_m)) /
              ((double)(currentNode->prev->prev->R.m - currentNode->prev->R.m)));
 
-    printf("y1 = %llu, y2 = %llu, x = %d, x1 = %d, x2 = %d\n",
-           currentNode->prev->R.g_m, currentNode->prev->prev->R.g_m,
-           currentNode->R.m, currentNode->prev->R.m,
-           currentNode->prev->prev->R.m);
+    // DEBUG:
+    // printf("y1 = %llu, y2 = %llu, x = %d, x1 = %d, x2 = %d\n",
+    //        currentNode->prev->R.g_m, currentNode->prev->prev->R.g_m,
+    //        currentNode->R.m, currentNode->prev->R.m,
+    //        currentNode->prev->prev->R.m);
 
     double y_os =
         (double)currentNode->prev->R.o_s +
@@ -211,13 +212,14 @@ int extrapolate(Node *currentNode) {
     e_os = epsilon(currentNode->R.o_s, y_os);
     e_or = epsilon(currentNode->R.o_r, y_or);
 
-    printf("true_g_m = %llu, guess_g_m = %.8f ", currentNode->R.g_m, y_gm);
-    printf("true_o_s = %llu, guess_o_s = %.8f ", currentNode->R.o_s, y_os);
-    printf("true_o_r = %llu, guess_o_r = %.8f ", currentNode->R.o_r, y_or);
-
-    printf("e_gm = %f ", e_gm);
-    printf("e_os = %f ", e_os);
-    printf("e_or = %f\n", e_or);
+    // DEBUG:
+    // printf("true_g_m = %llu, guess_g_m = %.8f ", currentNode->R.g_m, y_gm);
+    // printf("true_o_s = %llu, guess_o_s = %.8f ", currentNode->R.o_s, y_os);
+    // printf("true_o_r = %llu, guess_o_r = %.8f ", currentNode->R.o_r, y_or);
+    //
+    // printf("e_gm = %f ", e_gm);
+    // printf("e_os = %f ", e_os);
+    // printf("e_or = %f\n", e_or);
 
     // if the difference is more than 1% return a one to keep looping
     if (e_gm > 1 || e_os > 1 || e_or > 1) {
@@ -445,13 +447,15 @@ int main(int argc, char *argv[]) {
   }
   // end of g0 and rttn calculation
 
-  double L = (double)rtt_1 / 2 - g_0;
+  // TODO:
+  // divide by 2
+  double l = (double)rtt_1 / 2 - g_0;
 
   // Print values for part 1
   if (!rank) {
     printf("rtt_1 = %llu, g0 = %f, rttn (calculated with nruns = %d)= %llu, "
            "L = %f \n",
-           rtt_1, g_0, n_runs, rttn, L);
+           rtt_1, g_0, n_runs, rttn, l);
   }
 
   result *R = malloc(sizeof(result));
@@ -507,7 +511,7 @@ int main(int argc, char *argv[]) {
     if ((currentNode->R.m - currentNode->prev->R.m) >
         fmax(32, 0.01 * currentNode->R.m)) {
 
-      printf("Rank %d, CurrentNode m = %d\n", rank, currentNode->R.m);
+      // printf("Rank %d, CurrentNode m = %d\n", rank, currentNode->R.m);
 
       if (!rank) {
         if (extrapolate(currentNode)) {
@@ -515,7 +519,7 @@ int main(int argc, char *argv[]) {
                    MPI_COMM_WORLD);
           if ((currentNode->prev->R.m + currentNode->R.m) / 2 <= m(30))
             R->m = (currentNode->prev->R.m + currentNode->R.m) / 2;
-          printf("Rank %d New m value (%d) added\n", rank, R->m);
+          // printf("Rank %d New m value (%d) added\n", rank, R->m);
           getResult(R);
           insertNode(list, *R);
         } else
@@ -530,7 +534,7 @@ int main(int argc, char *argv[]) {
         else if (flag == WORK) {
           if ((currentNode->prev->R.m + currentNode->R.m) / 2 <= m(30))
             R->m = (currentNode->prev->R.m + currentNode->R.m) / 2;
-          printf("Rank %d New m value (%d) added\n", rank, R->m);
+          // printf("Rank %d New m value (%d) added\n", rank, R->m);
           getResult(R);
           insertNode(list, *R);
         }
@@ -539,35 +543,29 @@ int main(int argc, char *argv[]) {
     currentNode = currentNode->next;
   }
 
-  printf("Rank %d done while loop\n", rank);
+  // printf("Rank %d done while loop\n", rank);
   if (!rank) {
     MPI_Send(NULL, ZERO_DATA_COUNT, MPI_CHAR, RANK_ONE, STOP, MPI_COMM_WORLD);
   }
 
-  if (!rank)
+  // Print values for part 2 and 3
+  if (!rank) {
     printList(list);
+    double L = l + list->head->R.g_m - list->head->R.o_s - list->head->R.o_r;
+    double o = ((double)list->head->R.o_s + list->head->R.o_r) / 2;
+    unsigned long long g = list->head->R.g_m;
+    double G = list->tail->R.g_m_over_m;
+    int P = 2; // Run with -np 2
+
+    printf("LogP/LogGP: L = %.8f \n", L);
+    printf("LogP/LogGP: o = %.8f \n", o);
+    printf("LogP/LogGP: g = %llu \n", list->head->R.g_m);
+    printf("LogP/LogGP: G = %.8f \n", G);
+    printf("LogP/LogGP: P = %d \n", P);
+  }
 
   freeList(list);
   free(list);
-
-  // BUG:
-  //  if (!rank) {
-  //    List *list = malloc(sizeof(List));
-  //    list->tail = NULL;
-  //    list->head = NULL;
-  //    list->size = 0;
-  //    result R;
-  //    for (int i = 0; i < 100; i++) {
-  //      R.m = rand() % 100;
-  //      printf("%d\n", R.m);
-  //      insertNode(list, R);
-  //    }
-  //    printList(list);
-  //    freeList(list);
-  //    free(list);
-  //  }
-
-  // Print values for part 2 and 3
 
   MPI_Finalize();
 
